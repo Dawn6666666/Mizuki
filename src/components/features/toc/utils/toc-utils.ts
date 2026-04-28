@@ -3,7 +3,7 @@
  */
 
 import type { HeadingData, TOCConfig, TOCItem } from "../types/toc";
-import { getKatakanaBadge } from "./japanese-katakana";
+import { getTOCBadge, normalizeTOCBadgeStyle } from "./japanese-katakana";
 
 /**
  * 从 DOM 中提取标题数据
@@ -66,7 +66,7 @@ export function generateTOCItems(
 			let badge: string | undefined;
 
 			if (h.level === minLevel) {
-				badge = getKatakanaBadge(h1Count, config.useJapaneseBadge);
+				badge = getTOCBadge(h1Count, config.badgeStyle);
 				h1Count++;
 			}
 
@@ -129,11 +129,16 @@ export function createHeadingObserver(
  */
 export function getTOCConfig(): TOCConfig {
 	const siteConfig = window.siteConfig || {};
+	const badgeStyle = normalizeTOCBadgeStyle(
+		siteConfig.toc?.badgeStyle,
+		siteConfig.toc?.useJapaneseBadge,
+	);
 	return {
 		enable: siteConfig.toc?.enable ?? true,
 		mode: siteConfig.toc?.mode ?? "sidebar",
 		depth: siteConfig.toc?.depth ?? 3,
-		useJapaneseBadge: siteConfig.toc?.useJapaneseBadge ?? false,
+		badgeStyle,
+		useJapaneseBadge: badgeStyle === "katakana",
 	};
 }
 

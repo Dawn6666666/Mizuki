@@ -3,6 +3,12 @@
  * 处理移动端目录的状态管理和交互逻辑
  */
 
+import {
+	getTOCBadge,
+	normalizeTOCBadgeStyle,
+	type TOCBadgeStyle,
+} from "../utils/japanese-katakana";
+
 export interface TOCItem {
 	id: string;
 	text: string;
@@ -18,7 +24,7 @@ export interface PostItem {
 }
 
 export interface TOCConfig {
-	useJapaneseBadge: boolean;
+	badgeStyle: TOCBadgeStyle;
 	depth: number;
 }
 
@@ -26,29 +32,6 @@ export interface TOCConfig {
  * 生成目录项
  */
 export function generateTOCItems(config: TOCConfig): TOCItem[] {
-	const japaneseHiragana = [
-		"ア",
-		"イ",
-		"ウ",
-		"エ",
-		"オ",
-		"カ",
-		"キ",
-		"ク",
-		"ケ",
-		"コ",
-		"サ",
-		"シ",
-		"ス",
-		"セ",
-		"ソ",
-		"タ",
-		"チ",
-		"ツ",
-		"テ",
-		"ト",
-	];
-
 	const headings = document.querySelectorAll("h1, h2, h3, h4, h5, h6");
 	const items: TOCItem[] = [];
 	let h1Count = 0;
@@ -70,15 +53,8 @@ export function generateTOCItems(config: TOCConfig): TOCItem[] {
 
 		// 只为 H1 标题生成 badge
 		if (level === 1) {
+			badge = getTOCBadge(h1Count, config.badgeStyle);
 			h1Count++;
-			if (
-				config.useJapaneseBadge &&
-				h1Count - 1 < japaneseHiragana.length
-			) {
-				badge = japaneseHiragana[h1Count - 1];
-			} else {
-				badge = h1Count.toString();
-			}
 		}
 
 		items.push({ id: heading.id, text, level, badge });
@@ -166,8 +142,12 @@ export function scrollToHeading(id: string, offset = 80): void {
  * 获取 TOC 配置
  */
 export function getTOCConfig(): TOCConfig {
+	const badgeStyle = normalizeTOCBadgeStyle(
+		window.siteConfig?.toc?.badgeStyle,
+		window.siteConfig?.toc?.useJapaneseBadge,
+	);
 	return {
-		useJapaneseBadge: window.siteConfig?.toc?.useJapaneseBadge ?? false,
+		badgeStyle,
 		depth: window.siteConfig?.toc?.depth ?? 3,
 	};
 }

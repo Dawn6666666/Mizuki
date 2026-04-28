@@ -4,6 +4,10 @@
  */
 
 import type { HeadingData, TOCScrollOptions } from "../types/toc";
+import {
+	normalizeTOCBadgeStyle,
+	type TOCBadgeStyle,
+} from "../utils/japanese-katakana";
 
 /**
  * 从 DOM 中提取标题数据
@@ -74,18 +78,28 @@ export function createHeadingClickHandler(
  */
 export function getTOCConfig(): {
 	depth: number;
+	badgeStyle: TOCBadgeStyle;
 	useJapaneseBadge: boolean;
 } {
 	const siteConfig = (
 		window as unknown as {
 			siteConfig?: {
-				toc?: { depth?: number; useJapaneseBadge?: boolean };
+				toc?: {
+					depth?: number;
+					badgeStyle?: unknown;
+					useJapaneseBadge?: boolean;
+				};
 			};
 		}
 	).siteConfig;
+	const badgeStyle = normalizeTOCBadgeStyle(
+		siteConfig?.toc?.badgeStyle,
+		siteConfig?.toc?.useJapaneseBadge,
+	);
 	return {
 		depth: siteConfig?.toc?.depth ?? 3,
-		useJapaneseBadge: siteConfig?.toc?.useJapaneseBadge ?? false,
+		badgeStyle,
+		useJapaneseBadge: badgeStyle === "katakana",
 	};
 }
 

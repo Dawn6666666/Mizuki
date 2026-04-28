@@ -7,6 +7,7 @@ import FloatingButton from "@components/common/FloatingButton.astro";
 import { siteConfig } from "../../../config";
 import I18nKey from "../../../i18n/i18nKey";
 import { i18n } from "../../../i18n/translation";
+import { normalizeTOCBadgeStyle } from "./utils/japanese-katakana";
 
 interface Props {
 	headings?: MarkdownHeading[];
@@ -14,13 +15,16 @@ interface Props {
 
 const { headings: _ = [] } = Astro.props;
 const tocDepth = siteConfig.toc.depth;
-const useJapaneseBadge = siteConfig.toc.useJapaneseBadge;
+const badgeStyle = normalizeTOCBadgeStyle(
+	siteConfig.toc.badgeStyle,
+	siteConfig.toc.useJapaneseBadge,
+);
 ---
 
 <div
 	class="floating-toc-wrapper"
 	data-depth={tocDepth}
-	data-japanese-badge={useJapaneseBadge}
+	data-badge-style={badgeStyle}
 >
 	<FloatingButton
 		id="floating-toc-btn"

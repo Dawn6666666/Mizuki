@@ -1,5 +1,11 @@
 ---
 import { expressiveCodeConfig, siteConfig } from "@/config";
+import { normalizeTOCBadgeStyle } from "@/components/features/toc/utils/japanese-katakana";
+
+const tocBadgeStyle = normalizeTOCBadgeStyle(
+	siteConfig.toc.badgeStyle,
+	siteConfig.toc.useJapaneseBadge,
+);
 ---
 
 <!-- 全局配置载体 -->
@@ -17,7 +23,7 @@ import { expressiveCodeConfig, siteConfig } from "@/config";
 	define:vars={{
 		tocEnable: siteConfig.toc.enable,
 		tocDepth: siteConfig.toc.depth,
-		tocUseJapaneseBadge: siteConfig.toc.useJapaneseBadge,
+		tocBadgeStyle,
 	}}
 >
 	// 将 TOC 配置传递到前端
@@ -25,9 +31,8 @@ import { expressiveCodeConfig, siteConfig } from "@/config";
 	window.siteConfig.toc = {
 		enable: tocEnable,
 		depth: tocDepth,
-		useJapaneseBadge: tocUseJapaneseBadge,
+		badgeStyle: tocBadgeStyle,
+		// 兼容旧接口
+		useJapaneseBadge: tocBadgeStyle === "katakana",
 	};
-
-	// 添加调试信息
-	console.log("TOC Config:", window.siteConfig.toc);
 </script>

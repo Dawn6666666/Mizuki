@@ -4,7 +4,7 @@
  */
 
 import type { HeadingData, TOCItem } from "../types/toc";
-import { JAPANESE_KATAKANA } from "./japanese-katakana";
+import { getTOCBadge, type TOCBadgeStyle } from "./japanese-katakana";
 
 /**
  * 计算最小标题级别
@@ -23,16 +23,13 @@ export function getBadgeText(
 	index: number,
 	level: number,
 	minLevel: number,
-	useJapaneseBadge: boolean,
+	badgeStyle: TOCBadgeStyle,
 ): string {
 	if (level !== minLevel) {
 		return "";
 	}
 
-	if (useJapaneseBadge && index < JAPANESE_KATAKANA.length) {
-		return JAPANESE_KATAKANA[index];
-	}
-	return (index + 1).toString();
+	return getTOCBadge(index, badgeStyle);
 }
 
 /**
@@ -41,7 +38,7 @@ export function getBadgeText(
 export function generateTOCItems(
 	headings: HeadingData[],
 	depth: number,
-	useJapaneseBadge: boolean,
+	badgeStyle: TOCBadgeStyle,
 ): TOCItem[] {
 	if (headings.length === 0) {
 		return [];
@@ -58,7 +55,7 @@ export function generateTOCItems(
 				h1Count,
 				h.level,
 				minLevel,
-				useJapaneseBadge,
+				badgeStyle,
 			);
 
 			if (h.level === minLevel) {

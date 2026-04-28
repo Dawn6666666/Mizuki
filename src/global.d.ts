@@ -27,6 +27,7 @@ declare global {
 		enable?: boolean;
 		mode?: "float" | "sidebar";
 		depth?: number;
+		badgeStyle?: "number" | "katakana" | "roman";
 		useJapaneseBadge?: boolean;
 	}
 

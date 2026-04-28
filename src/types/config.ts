@@ -186,7 +186,8 @@ export interface SiteConfig {
 		desktopSidebar: boolean; // 电脑端右侧边栏 TOC
 		floating: boolean; // 悬浮 TOC 按钮
 		depth: 1 | 2 | 3;
-		useJapaneseBadge?: boolean; // 使用日语假名标记（あいうえお...）代替数字
+		badgeStyle?: "number" | "katakana" | "roman"; // TOC 徽章样式："number" 数字, "katakana" 日语片假名, "roman" 罗马数字
+		useJapaneseBadge?: boolean; // @deprecated 已废弃，请使用 badgeStyle 代替
 	};
 	showCoverInContent: boolean; // 控制文章封面在文章内容页显示的开关
 	generateOgImages: boolean;

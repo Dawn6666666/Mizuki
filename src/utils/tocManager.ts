@@ -4,7 +4,11 @@
  * 基于 Firefly 项目的 TOCManager 实现
  */
 
-import { JAPANESE_KATAKANA } from "../components/features/toc/utils/japanese-katakana";
+import {
+	getTOCBadge,
+	normalizeTOCBadgeStyle,
+	type TOCBadgeStyle,
+} from "../components/features/toc/utils/japanese-katakana";
 import I18nKey from "../i18n/i18nKey";
 import { i18n } from "../i18n/translation";
 
@@ -13,6 +17,8 @@ export interface TOCConfig {
 	contentElement?: HTMLElement;
 	maxLevel?: number;
 	scrollOffset?: number;
+	badgeStyle?: TOCBadgeStyle;
+	/** @deprecated 使用 badgeStyle 代替 */
 	useJapaneseBadge?: boolean;
 }
 
@@ -25,14 +31,18 @@ export class TOCManager {
 	private contentId: string | null;
 	private contentElement: HTMLElement | null;
 	private scrollOffset: number;
-	private useJapaneseBadge: boolean;
+	private badgeStyle: TOCBadgeStyle;
 
 	constructor(config: TOCConfig) {
 		this.contentId = config.contentId ?? null;
 		this.contentElement = config.contentElement ?? null;
 		this.maxLevel = config.maxLevel || 3;
 		this.scrollOffset = config.scrollOffset || 80;
-		this.useJapaneseBadge = config.useJapaneseBadge ?? false;
+		const legacyConfig = config as { useJapaneseBadge?: boolean };
+		this.badgeStyle = normalizeTOCBadgeStyle(
+			config.badgeStyle,
+			legacyConfig.useJapaneseBadge,
+		);
 	}
 
 	/**
@@ -114,13 +124,7 @@ export class TOCManager {
 
 	private generateBadgeContent(depth: number, heading1Count: number): string {
 		if (depth === this.minDepth) {
-			if (
-				this.useJapaneseBadge &&
-				heading1Count - 1 < JAPANESE_KATAKANA.length
-			) {
-				return JAPANESE_KATAKANA[heading1Count - 1];
-			}
-			return heading1Count.toString();
+			return getTOCBadge(heading1Count - 1, this.badgeStyle);
 		}
 		if (depth === this.minDepth + 1) {
 			return '<span class="toc-badge-dot"></span>';

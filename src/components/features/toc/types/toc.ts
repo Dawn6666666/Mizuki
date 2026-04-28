@@ -11,7 +11,7 @@ export interface TOCItem {
 	level: number;
 	/** 相对深度（0 = 顶级） */
 	depth: number;
-	/** 徽章文本（数字或日语字符） */
+	/** 徽章文本（数字、日语片假名或罗马数字） */
 	badge?: string;
 }
 
@@ -22,7 +22,9 @@ export interface TOCConfig {
 	mode: "float" | "sidebar";
 	/** 标题深度（1-6） */
 	depth: number;
-	/** 是否使用日语徽章 */
+	/** 徽章样式 */
+	badgeStyle: "number" | "katakana" | "roman";
+	/** @deprecated 使用 badgeStyle 代替 */
 	useJapaneseBadge: boolean;
 }
 

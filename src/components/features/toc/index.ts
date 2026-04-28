@@ -73,9 +73,13 @@ export {
 // Calculator utilities
 export {
 	getKatakanaBadge,
+	getTOCBadge,
 	JAPANESE_KATAKANA,
 	KATAKANA_COUNT,
+	normalizeTOCBadgeStyle,
+	ROMAN_NUMERALS,
 } from "./utils/japanese-katakana";
+export type { TOCBadgeStyle } from "./utils/japanese-katakana";
 export {
 	getMinLevel as calcMinLevel,
 	generateTOCItems as calcTOCItems,

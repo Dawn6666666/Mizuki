@@ -18,7 +18,7 @@ const { class: className } = Astro.props;
 </table-of-contents>
 
 <script>
-	import { JAPANESE_KATAKANA } from "./utils/japanese-katakana";
+	import { getTOCBadge } from "./utils/japanese-katakana";
 	import {
 		extractHeadings,
 		generateTOCItems,
@@ -299,11 +299,7 @@ const { class: className } = Astro.props;
 
 					let badgeContent: string;
 					if (item.depth === 0) {
-						badgeContent =
-							config.useJapaneseBadge &&
-							h1Count - 1 < JAPANESE_KATAKANA.length
-								? JAPANESE_KATAKANA[h1Count - 1]
-								: h1Count.toString();
+						badgeContent = getTOCBadge(h1Count - 1, config.badgeStyle);
 						h1Count++;
 					} else if (item.depth === 1) {
 						badgeContent =
