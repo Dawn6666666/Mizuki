@@ -55,7 +55,11 @@ export default defineConfig({
 					},
 				],
 			},
-			fallbacks: ["sans-serif"],
+			// These variables are composed into --font-sans below. Keep their
+			// fallback lists empty; otherwise a system fallback after this Latin
+			// font prevents the following CJK font from ever being considered.
+			fallbacks: [],
+			optimizedFallbacks: false,
 		},
 		{
 			name: "Loli",
@@ -70,7 +74,10 @@ export default defineConfig({
 					},
 				],
 			},
-			fallbacks: ["sans-serif"],
+			// The final system fallback belongs to --font-sans, not this partial
+			// CJK font stack.
+			fallbacks: [],
+			optimizedFallbacks: false,
 		},
 	],
 
