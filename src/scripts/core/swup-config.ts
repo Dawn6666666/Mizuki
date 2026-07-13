@@ -212,11 +212,16 @@ export const getDefaultFancyboxConfig = (): FancyboxConfig => ({
 // Fancybox 选择器
 export const FANCYBOX_SELECTORS = {
 	// 相册/文章图片
-	albumImages: ".custom-md img, #post-cover img, .moment-images img",
+	albumImages:
+		".custom-md img:not(.image-grid img), #post-cover img, .moment-images img",
+
+	// Markdown 图片网格：每个网格通过 data-fancybox 形成独立轮播组
+	imageGrids: ".image-grid [data-fancybox]",
 
 	// 相册链接
 	albumLinks: ".moment-images a[data-fancybox]",
 
 	// 单独的 fancybox 图片
-	singleFancybox: "[data-fancybox]:not(.moment-images a)",
+	singleFancybox:
+		"[data-fancybox]:not(.moment-images a):not(.image-grid [data-fancybox])",
 } as const;

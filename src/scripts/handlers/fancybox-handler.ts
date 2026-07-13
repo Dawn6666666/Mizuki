@@ -52,6 +52,7 @@ export class FancyboxHandler {
 	private checkForImages(): boolean {
 		return (
 			document.querySelector(FANCYBOX_SELECTORS.albumImages) !== null ||
+			document.querySelector(FANCYBOX_SELECTORS.imageGrids) !== null ||
 			document.querySelector(FANCYBOX_SELECTORS.albumLinks) !== null ||
 			document.querySelector(FANCYBOX_SELECTORS.singleFancybox) !== null
 		);
@@ -82,6 +83,10 @@ export class FancyboxHandler {
 			this.createAlbumImagesConfig(commonConfig),
 		);
 		this.boundSelectors.push(FANCYBOX_SELECTORS.albumImages);
+
+		// 图片网格会使用各自的 data-fancybox 值分组，不能与整篇文章图片混合。
+		this.Fancybox.bind(FANCYBOX_SELECTORS.imageGrids, commonConfig);
+		this.boundSelectors.push(FANCYBOX_SELECTORS.imageGrids);
 
 		// 绑定相册链接
 		this.Fancybox.bind(FANCYBOX_SELECTORS.albumLinks, {
