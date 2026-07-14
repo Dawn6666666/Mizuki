@@ -99,6 +99,7 @@ export function ImageGridComponent(properties, children) {
 					class: "image-grid__link no-styling",
 					href: src,
 					"data-fancybox": galleryId,
+					"data-no-swup": "true",
 					"data-caption": title,
 				},
 				[image],
