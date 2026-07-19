@@ -12,7 +12,12 @@
   var widgetInstance = null;
   var activeConfigKey = '';
   var loadingConfigKey = '';
+  var widgetLoaded = false;
+  var baseContentHeight = 500;
   var lastContentHeight = 500;
+  var floatingContentPadding = 12;
+  var layoutObserver = null;
+  var layoutFrame = 0;
 
   var menuActions = {
     home: function() { parent.postMessage({ type: 'l2d-action', action: 'home' }, '*'); },
@@ -21,18 +26,57 @@
   };
 
   function notifyLoaded() {
-    var maxBottom = 0;
-    document.querySelectorAll('*').forEach(function(el) {
-      if (el.getBoundingClientRect) {
-        var r = el.getBoundingClientRect();
-        if (r.width > 0 && r.height > 0 && r.bottom > maxBottom) {
-          maxBottom = r.bottom;
-        }
-      }
+    parent.postMessage({ type: 'l2d-loaded', contentHeight: lastContentHeight }, '*');
+  }
+
+  function getWidgetHeight(size) {
+    if (typeof size === 'number') return size;
+    if (size && typeof size.height === 'number') return size.height;
+    return 500;
+  }
+
+  function measureContentHeight() {
+    if (!widgetLoaded) return;
+
+    var viewportHeight = window.innerHeight;
+    var minTop = viewportHeight - baseContentHeight;
+    document.body.querySelectorAll('*').forEach(function(el) {
+      if (!el.getBoundingClientRect || /^(SCRIPT|STYLE)$/.test(el.tagName)) return;
+      var style = getComputedStyle(el);
+      if (style.display === 'none' || style.visibility === 'hidden' || Number(style.opacity) === 0) return;
+      var paintsBox =
+        !/^(transparent|rgba\(0, 0, 0, 0\))$/.test(style.backgroundColor) ||
+        style.backgroundImage !== 'none' ||
+        style.boxShadow !== 'none';
+      if (!paintsBox) return;
+      var rect = el.getBoundingClientRect();
+      if (rect.width > 0 && rect.height > 0 && rect.top < minTop) minTop = rect.top;
     });
 
-    lastContentHeight = Math.ceil(maxBottom) || lastContentHeight || 500;
-    parent.postMessage({ type: 'l2d-loaded', contentHeight: lastContentHeight }, '*');
+    var measuredHeight = Math.ceil(viewportHeight - minTop);
+    var nextHeight = measuredHeight > baseContentHeight
+      ? measuredHeight + floatingContentPadding
+      : baseContentHeight;
+    if (nextHeight === lastContentHeight) return;
+    lastContentHeight = nextHeight;
+    notifyLoaded();
+  }
+
+  function scheduleLayoutMeasurement() {
+    cancelAnimationFrame(layoutFrame);
+    layoutFrame = requestAnimationFrame(measureContentHeight);
+  }
+
+  function observeWidgetLayout() {
+    if (layoutObserver) layoutObserver.disconnect();
+    layoutObserver = new MutationObserver(scheduleLayoutMeasurement);
+    layoutObserver.observe(document.body, {
+      subtree: true,
+      childList: true,
+      characterData: true,
+      attributes: true,
+      attributeFilter: ['class', 'style'],
+    });
   }
 
   function hideAboutMenu() {
@@ -51,6 +95,10 @@
       console.error('Failed to destroy Live2D widget:', err);
     }
     widgetInstance = null;
+    widgetLoaded = false;
+    if (layoutObserver) layoutObserver.disconnect();
+    layoutObserver = null;
+    cancelAnimationFrame(layoutFrame);
   }
 
   window.addEventListener('message', function(e) {
@@ -59,7 +107,7 @@
     var configKey = JSON.stringify(config);
 
     if (widgetInstance && activeConfigKey === configKey) {
-      notifyLoaded();
+      if (widgetLoaded) notifyLoaded();
       return;
     }
 
@@ -85,6 +133,8 @@
     try {
       widgetInstance = L2D_WIDGET.createWidget(config);
       activeConfigKey = configKey;
+      baseContentHeight = getWidgetHeight(config.size);
+      lastContentHeight = baseContentHeight;
     } catch (err) {
       loadingConfigKey = '';
       activeConfigKey = '';
@@ -97,27 +147,15 @@
       hideAboutMenu();
     }
 
-    var notified = false;
-    function notifyOnce() {
-      if (notified) return;
-      notified = true;
+    widgetInstance.l2d.on('loaded', function() {
+      widgetLoaded = true;
       notifyLoaded();
-    }
-
-    var checkInterval = setInterval(function() {
-      var canvas = document.querySelector('canvas');
-      if (canvas && canvas.width > 0 && canvas.height > 0) {
-        clearInterval(checkInterval);
-        setTimeout(notifyOnce, 300);
-      }
-    }, 200);
-
-    setTimeout(function() {
-      clearInterval(checkInterval);
-      loadingConfigKey = '';
-      notifyOnce();
-    }, 15000);
+      observeWidgetLayout();
+      scheduleLayoutMeasurement();
+    });
   });
+
+  window.addEventListener('resize', scheduleLayoutMeasurement);
 </script>
 </body>
 </html>

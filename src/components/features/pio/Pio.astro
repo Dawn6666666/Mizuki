@@ -82,6 +82,7 @@ const isRight = config.position === "right";
 	};
 
 	const win = window as Window & { __mizukiPioController?: PioController };
+	const PIO_MOBILE_BREAKPOINT = 768;
 	const scriptEl = document.currentScript as HTMLScriptElement | null;
 	const renderedEl =
 		scriptEl?.previousElementSibling instanceof HTMLIFrameElement &&
@@ -119,7 +120,10 @@ const isRight = config.position === "right";
 
 			function applyVisibility() {
 				if (!currentEl) return;
-				if (currentHiddenOnMobile && window.innerWidth <= 1280) {
+				if (
+					currentHiddenOnMobile &&
+					window.innerWidth <= PIO_MOBILE_BREAKPOINT
+				) {
 					currentEl.style.display = "none";
 				} else {
 					currentEl.style.display = "";
@@ -128,7 +132,11 @@ const isRight = config.position === "right";
 
 			function postInit() {
 				if (!currentEl || initSent || isTransitioning) return;
-				if (currentHiddenOnMobile && window.innerWidth <= 1280) return;
+				if (
+					currentHiddenOnMobile &&
+					window.innerWidth <= PIO_MOBILE_BREAKPOINT
+				)
+					return;
 				currentEl.contentWindow?.postMessage(
 					{ type: "l2d-init", config: currentConfig },
 					"*",
