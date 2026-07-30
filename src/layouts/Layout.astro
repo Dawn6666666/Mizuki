@@ -146,6 +146,14 @@ const bannerOffset =
 >
 	<head>
 		<meta charset="UTF-8" />
+		<!--
+			Tailwind utilities must stay after its base layer in the cascade.
+			Swup preserves shared head nodes while replacing page-specific styles,
+			so declare the canonical order before any stylesheet can introduce a layer.
+		-->
+		<style is:inline data-tailwind-layer-order>
+			@layer properties, theme, base, components, utilities;
+		</style>
 		<Font cssVariable="--font-body" preload />
 		<Font cssVariable="--font-cjk" />
 		<Font cssVariable="--font-jetbrains-mono" />

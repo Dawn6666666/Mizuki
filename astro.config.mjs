@@ -124,7 +124,16 @@ export default defineConfig({
 			cache: true,
 			preload: false, // 禁用预加载以提升性能
 			accessibility: true,
-			updateHead: process.env.NODE_ENV === "production",
+			// Keep the canonical Tailwind layer declaration across head updates.
+			// Without it, page-specific CSS chunks can make `base` outrank
+			// `utilities` after a Swup navigation.
+			updateHead:
+				process.env.NODE_ENV === "production"
+					? {
+							awaitAssets: true,
+							persistTags: "style[data-tailwind-layer-order]",
+						}
+					: false,
 			updateBodyClass: false,
 			globalInstance: true,
 			// 滚动相关配置优化
