@@ -1,5 +1,9 @@
 import assert from "node:assert/strict";
+import { createRequire } from "node:module";
 import { describe, it } from "node:test";
+
+import katex from "katex";
+import "katex/dist/contrib/mhchem.mjs";
 
 import {
 	encodePlantUML,
@@ -10,6 +14,40 @@ import { remarkAutoImageGrid } from "../src/plugins/remark-auto-image-grid.mjs";
 import { remarkFixGithubAdmonitions } from "../src/plugins/remark-fix-github-admonitions.js";
 import { remarkPlantuml } from "../src/plugins/remark-plantuml.mjs";
 import { remarkWikiLink } from "../src/plugins/remark-wiki-link.mjs";
+import {
+	readCodeCollapseConfig,
+	shouldAutoCollapse,
+} from "../src/scripts/code-collapse.js";
+
+describe("KaTeX mhchem integration", () => {
+	it("uses one KaTeX version and renders chemical equations", () => {
+		const require = createRequire(import.meta.url);
+		const rehypeRequire = createRequire(require.resolve("rehype-katex"));
+		assert.equal(rehypeRequire.resolve("katex"), require.resolve("katex"));
+
+		const source = `${String.fromCharCode(92)}ce{H2O + CO2 -> H2CO3}`;
+		const html = katex.renderToString(source, { throwOnError: true });
+		assert.doesNotMatch(html, /#cc0000/);
+		assert.match(html, /x-arrow|mathvariant="normal"/);
+	});
+});
+
+describe("Automatic code block collapse", () => {
+	it("reads validated settings and only collapses blocks at the threshold", () => {
+		const config = readCodeCollapseConfig({
+			dataset: {
+				codeCollapseEnabled: "true",
+				codeCollapseLineThreshold: "20",
+				codeCollapsePreviewLines: "10",
+				codeCollapseDefaultCollapsed: "true",
+			},
+		});
+		assert.equal(shouldAutoCollapse(19, config), false);
+		assert.equal(shouldAutoCollapse(20, config), true);
+		assert.equal(config.previewLines, 10);
+		assert.equal(config.defaultCollapsed, true);
+	});
+});
 
 describe("PlantUML markdown pipeline", () => {
 	it("encodes source and injects a theme after @startuml", () => {

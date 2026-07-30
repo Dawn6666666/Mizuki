@@ -10,8 +10,6 @@ import { defineConfig, fontProviders } from "astro/config";
 import expressiveCode from "astro-expressive-code";
 import icon from "astro-icon";
 import { pluginLanguageLogo } from "ec-lang-logo";
-import { pluginCollapsible } from "expressive-code-collapsible";
-import katex from "katex";
 import "katex/dist/contrib/mhchem.mjs";
 import { oddmisc } from "oddmisc";
 import rehypeAutolinkHeadings from "rehype-autolink-headings";
@@ -164,22 +162,6 @@ export default defineConfig({
 							}),
 						]
 					: []),
-				...(expressiveCodeConfig.collapsible.enable
-					? [
-							pluginCollapsible({
-								lineThreshold:
-									expressiveCodeConfig.collapsible.lineThreshold,
-								previewLines:
-									expressiveCodeConfig.collapsible.previewLines,
-								defaultCollapsed:
-									expressiveCodeConfig.collapsible.defaultCollapsed,
-								expandButtonText: "展开代码",
-								collapseButtonText: "收起代码",
-								expandedAnnouncement: "代码块已展开",
-								collapsedAnnouncement: "代码块已折叠",
-							}),
-						]
-					: []),
 				pluginCustomCopyButton(),
 			],
 			defaultProps: {
@@ -255,7 +237,7 @@ export default defineConfig({
 				remarkSectionize,
 			],
 			rehypePlugins: [
-				[rehypeKatex, { katex }],
+				rehypeKatex,
 				[
 					rehypeExternalLinks,
 					{

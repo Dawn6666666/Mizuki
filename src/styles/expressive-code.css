@@ -80,6 +80,85 @@
   user-select: none;
 }
 
+/* 长代码块沿用 Mizuki 原有的右上角折叠交互，由配置控制自动触发阈值。 */
+.expressive-code.auto-collapsible .frame {
+  position: relative;
+}
+
+.expressive-code.auto-collapsible .collapse-toggle-btn {
+  all: initial;
+  position: absolute;
+  top: 0.75rem;
+  right: 3.5rem;
+  z-index: 20;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 2rem;
+  height: 2rem;
+  border-radius: 0.5rem;
+  color: var(--btn-content);
+  background: var(--btn-regular-bg);
+  box-shadow: 0 1px 2px rgb(0 0 0 / 5%);
+  cursor: pointer;
+  opacity: 0;
+  transition:
+    opacity 150ms ease,
+    background-color 150ms ease,
+    transform 150ms ease;
+}
+
+.expressive-code.auto-collapsible.collapsed .collapse-toggle-btn,
+.expressive-code.auto-collapsible .frame:hover .collapse-toggle-btn,
+.expressive-code.auto-collapsible .collapse-toggle-btn:focus-visible {
+  opacity: 1;
+}
+
+.expressive-code.auto-collapsible .collapse-toggle-btn:hover {
+  background: var(--btn-regular-bg-hover);
+}
+
+.expressive-code.auto-collapsible .collapse-toggle-btn:active {
+  transform: scale(0.9);
+}
+
+.expressive-code.auto-collapsible .collapse-toggle-btn:focus-visible {
+  outline: 2px solid var(--primary);
+  outline-offset: 2px;
+}
+
+.expressive-code.auto-collapsible .collapse-toggle-btn svg {
+  width: 1rem;
+  height: 1rem;
+  pointer-events: none;
+  transition: transform 200ms ease;
+}
+
+.expressive-code.auto-collapsible.collapsed .collapse-toggle-btn svg {
+  transform: rotate(180deg);
+}
+
+.expressive-code.auto-collapsible .frame pre {
+  position: relative;
+  transition: max-height 250ms ease;
+}
+
+.expressive-code.auto-collapsible.collapsed .frame pre {
+  max-height: var(--code-collapse-preview-height, 16rem);
+  overflow: hidden;
+}
+
+.expressive-code.auto-collapsible.collapsed .frame pre::after {
+  content: "";
+  position: absolute;
+  right: 0;
+  bottom: 0;
+  left: 0;
+  height: 4.5rem;
+  background: linear-gradient(to bottom, transparent, var(--codeblock-bg));
+  pointer-events: none;
+}
+
 /* 移动端适配 (Mobile) */
 @media (width < 768px) {
   /* 调整复制按钮大小和位置 */
@@ -91,6 +170,18 @@
   }
 
   .expressive-code .copy-btn-icon {
+    width: 0.875rem;
+    height: 0.875rem;
+  }
+
+  .expressive-code.auto-collapsible .collapse-toggle-btn {
+    top: 0.5rem;
+    right: 3rem;
+    width: 1.75rem;
+    height: 1.75rem;
+  }
+
+  .expressive-code.auto-collapsible .collapse-toggle-btn svg {
     width: 0.875rem;
     height: 0.875rem;
   }
@@ -118,7 +209,13 @@
 }
 
 @media print {
-  .expressive-code .copy-btn {
+  .expressive-code.auto-collapsible.collapsed .frame pre {
+    max-height: none !important;
+  }
+
+  .expressive-code.auto-collapsible.collapsed .frame pre::after,
+  .expressive-code .copy-btn,
+  .expressive-code .collapse-toggle-btn {
     display: none !important;
   }
 }
