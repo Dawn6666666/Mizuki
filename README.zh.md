@@ -353,6 +353,10 @@ pnpm run sync-content
 
 本项目基于 [Fuwari](https://github.com/saicaca/fuwari) 开发，该项目使用 MIT 许可证。根据 MIT 许可证要求，原始版权声明和许可声明已包含在 LICENSE.MIT 文件中。
 
+### 第三方软件声明
+
+Markdown 增强功能的部分实现基于 [Firefly](https://github.com/CuteLeaf/Firefly) 的 MIT 许可代码改写。原始版权声明与完整许可证文本保留在 [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md) 中。
+
 ## 🙏 致谢
 
 - 基于原始 [Fuwari](https://github.com/saicaca/fuwari) 模板

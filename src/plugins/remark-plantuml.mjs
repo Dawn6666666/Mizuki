@@ -1,3 +1,8 @@
+// Portions adapted from https://github.com/CuteLeaf/Firefly
+// Copyright (c) 2024 saicaca
+// Copyright (c) 2025 CuteLeaf
+// Licensed under the MIT License. See THIRD_PARTY_NOTICES.md.
+
 import { visit } from "unist-util-visit";
 import {
 	encodePlantUML,

@@ -352,6 +352,10 @@ This project is licensed under the Apache License 2.0 - see the [LICENSE](LICENS
 
 This project is based on [Fuwari](https://github.com/saicaca/fuwari), which is licensed under the MIT License. The original copyright notice and permission notice are included in the LICENSE.MIT file in accordance with the MIT License requirements.
 
+### Third-Party Notices
+
+Portions of the Markdown enhancements are adapted from [Firefly](https://github.com/CuteLeaf/Firefly) under the MIT License. The original copyright and complete license text are retained in [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md).
+
 ## 🙏 Acknowledgements
 
 - Based on the original [Fuwari](https://github.com/saicaca/fuwari) template
