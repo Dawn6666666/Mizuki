@@ -3,6 +3,7 @@ import { Image as AstroImage, Picture } from "astro:assets";
 import type { ImageFormat, ResponsiveImageLayout } from "../../../types/config";
 import {
 	isRemoteImageSource,
+	publicImageUrl,
 	resolveImageMetadata,
 } from "../../../utils/image-source-utils";
 import {
@@ -11,8 +12,6 @@ import {
 	getImageQuality,
 	shouldAddNoReferrer,
 } from "../../../utils/image-utils";
-
-import { url } from "../../../utils/url-utils";
 
 interface Props {
 	id?: string;
@@ -53,8 +52,8 @@ const className = Astro.props.class;
 
 const fallbackFormat = getFallbackFormat();
 
-const isPublic = src.startsWith("/");
 const isRemote = isRemoteImageSource(src);
+const isPublic = src.startsWith("/") && !isRemote;
 const img = await resolveImageMetadata(src, basePath);
 if (!img && !isPublic && !isRemote) {
 	console.error(`\n[ERROR] Image file not found: ${src}`);
@@ -64,7 +63,7 @@ const imageClass = "w-full h-full object-cover";
 const imageStyle = `object-position: ${position}`;
 
 // 基于通配符配置检查是否需要添加 referrerpolicy（仅对非本地图片）
-const fullSrc = isPublic ? url(src) : src;
+const fullSrc = isPublic ? publicImageUrl(src) : src;
 const referrerPolicy =
 	!img && shouldAddNoReferrer(fullSrc) ? "no-referrer" : undefined;
 
@@ -112,7 +111,7 @@ const responsiveProps = {
 	{
 		!img && (
 			<img
-				src={isPublic ? url(src) : src}
+				src={fullSrc}
 				alt={alt || ""}
 				class={imageClass}
 				style={imageStyle}

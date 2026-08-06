@@ -24,6 +24,10 @@ const imageSource = await readFile(
 	new URL("../src/components/atoms/Image/Image.astro", import.meta.url),
 	"utf8",
 );
+const viewportImageSource = await readFile(
+	new URL("../src/components/atoms/Image/ViewportImage.astro", import.meta.url),
+	"utf8",
+);
 const imageSourceUtils = await readFile(
 	new URL("../src/utils/image-source-utils.ts", import.meta.url),
 	"utf8",
@@ -64,6 +68,21 @@ describe("Default image loading boundary", () => {
 		assert.match(
 			imageSourceUtils,
 			/if \(isRemoteImageSource\(src\)\) return src/,
+		);
+	});
+
+	it("passes protocol-relative images through and emits the JPEG MIME type", () => {
+		assert.match(imageSource, /const isRemote = isRemoteImageSource\(src\)/);
+		assert.match(
+			imageSource,
+			/const isPublic = src\.startsWith\("\/"\) && !isRemote/,
+		);
+		assert.match(imageSource, /src={fullSrc}/);
+		assert.doesNotMatch(imageSource, /url-utils/);
+		assert.match(viewportImageSource, /format === "jpg" \? "jpeg" : format/);
+		assert.match(
+			viewportImageSource,
+			/type={getImageMimeType\(source\.format\)}/,
 		);
 	});
 

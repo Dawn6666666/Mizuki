@@ -41,7 +41,7 @@ const {
 } = Astro.props;
 const className = Astro.props.class;
 const metadata = await resolveImageMetadata(src);
-const browserSrc = src.startsWith("/") ? publicImageUrl(src) : src;
+const browserSrc = publicImageUrl(src);
 const sources = metadata
 	? await Promise.all(
 			formats.map(async (format) => {
@@ -63,6 +63,11 @@ const transparentFallback =
 const referrerPolicy = shouldAddNoReferrer(browserSrc)
 	? "no-referrer"
 	: undefined;
+
+function getImageMimeType(format: ImageFormat | undefined): string | undefined {
+	if (!format) return undefined;
+	return `image/${format === "jpg" ? "jpeg" : format}`;
+}
 ---
 
 <picture id={id} class="block w-full h-full">
@@ -71,7 +76,7 @@ const referrerPolicy = shouldAddNoReferrer(browserSrc)
 			media={media}
 			srcset={source.srcset}
 			sizes={sizes}
-			type={source.format ? `image/${source.format}` : undefined}
+			type={getImageMimeType(source.format)}
 		/>
 	))}
 	<img
