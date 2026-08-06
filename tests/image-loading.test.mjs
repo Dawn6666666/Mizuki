@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
-import { fileURLToPath } from "node:url";
 import { describe, it } from "node:test";
+import { fileURLToPath } from "node:url";
 import sharp from "sharp";
 
 const bannerSource = await readFile(
@@ -9,14 +9,23 @@ const bannerSource = await readFile(
 	"utf8",
 );
 const wallpaperSource = await readFile(
-	new URL(
-		"../src/components/misc/FullscreenWallpaper.astro",
-		import.meta.url,
-	),
+	new URL("../src/components/misc/FullscreenWallpaper.astro", import.meta.url),
+	"utf8",
+);
+const wallpaperConfigSource = await readFile(
+	new URL("../src/config/backgroundWallpaper.ts", import.meta.url),
+	"utf8",
+);
+const siteConfigSource = await readFile(
+	new URL("../src/config/siteConfig.ts", import.meta.url),
 	"utf8",
 );
 const imageSource = await readFile(
 	new URL("../src/components/atoms/Image/Image.astro", import.meta.url),
+	"utf8",
+);
+const imageSourceUtils = await readFile(
+	new URL("../src/utils/image-source-utils.ts", import.meta.url),
 	"utf8",
 );
 const musicConstants = await readFile(
@@ -52,6 +61,10 @@ describe("Default image loading boundary", () => {
 	it("allows mirrored public assets to enter the Astro image pipeline", () => {
 		assert.match(imageSource, /resolveImageMetadata/);
 		assert.match(imageSource, /img && usePicture/);
+		assert.match(
+			imageSourceUtils,
+			/if \(isRemoteImageSource\(src\)\) return src/,
+		);
 	});
 
 	it("ships player-sized local music covers while leaving remote covers dynamic", async () => {
@@ -65,8 +78,35 @@ describe("Default image loading boundary", () => {
 				import.meta.url,
 			);
 			const metadata = await sharp(fileURLToPath(path)).metadata();
-			assert.ok((metadata.width ?? Infinity) <= 192);
-			assert.ok((metadata.height ?? Infinity) <= 192);
+			assert.ok((metadata.width ?? Number.POSITIVE_INFINITY) <= 192);
+			assert.ok((metadata.height ?? Number.POSITIVE_INFINITY) <= 192);
+		}
+	});
+
+	it("keeps existing default-image mirrors synchronized with public files", async () => {
+		const activeConfigSource = `${siteConfigSource}\n${wallpaperConfigSource}`;
+		for (const group of ["desktop-banner", "mobile-banner"]) {
+			for (let index = 1; index <= 4; index += 1) {
+				const relative = `assets/${group}/${index}.webp`;
+				let publicFile;
+				try {
+					publicFile = await readFile(
+						new URL(`../public/${relative}`, import.meta.url),
+					);
+				} catch (error) {
+					if (error?.code !== "ENOENT") throw error;
+					assert.doesNotMatch(activeConfigSource, new RegExp(relative));
+					continue;
+				}
+				const mirroredFile = await readFile(
+					new URL(`../src/assets/public/${relative}`, import.meta.url),
+				);
+				assert.deepEqual(
+					mirroredFile,
+					publicFile,
+					`${relative} mirror drifted`,
+				);
+			}
 		}
 	});
 });

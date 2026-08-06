@@ -14,6 +14,7 @@ export function isRemoteImageSource(src: string): boolean {
 }
 
 export function publicImageUrl(src: string): string {
+	if (isRemoteImageSource(src)) return src;
 	if (!src.startsWith("/")) return src;
 	const base = import.meta.env.BASE_URL.replace(/\/$/, "");
 	return `${base}${src}` || "/";
