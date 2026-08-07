@@ -10,6 +10,38 @@ const bannerStyles = await readFile(
 	new URL("../src/styles/banner.css", import.meta.url),
 	"utf8",
 );
+const mainStyles = await readFile(
+	new URL("../src/styles/main.css", import.meta.url),
+	"utf8",
+);
+const packageConfig = JSON.parse(
+	await readFile(new URL("../package.json", import.meta.url), "utf8"),
+);
+
+describe("Global style loading regressions", () => {
+	it("loads shared styles from the root layout and verifies the build output", () => {
+		for (const stylesheet of [
+			"variables.styl",
+			"banner.css",
+			"transition.css",
+			"widget-responsive.css",
+		]) {
+			assert.ok(
+				layoutSource.includes(`import "../styles/${stylesheet}";`),
+				`${stylesheet} must be an explicit root layout dependency`,
+			);
+		}
+
+		assert.doesNotMatch(
+			mainStyles,
+			/@import\s+["']\.\/(?:banner|transition)\.css/,
+		);
+		assert.match(
+			packageConfig.scripts.build,
+			/node scripts\/check-global-style-loading\.mjs/,
+		);
+	});
+});
 
 describe("Fullscreen banner layout regressions", () => {
 	it("does not apply the standard banner sticky compensation in fullscreen", () => {
