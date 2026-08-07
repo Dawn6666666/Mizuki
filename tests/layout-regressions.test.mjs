@@ -14,6 +14,18 @@ const mainStyles = await readFile(
 	new URL("../src/styles/main.css", import.meta.url),
 	"utf8",
 );
+const markdownSource = await readFile(
+	new URL("../src/components/misc/Markdown.astro", import.meta.url),
+	"utf8",
+);
+const encryptorSource = await readFile(
+	new URL("../src/components/features/auth/Encryptor.astro", import.meta.url),
+	"utf8",
+);
+const globalStyleCheckSource = await readFile(
+	new URL("../scripts/check-global-style-loading.mjs", import.meta.url),
+	"utf8",
+);
 const packageConfig = JSON.parse(
 	await readFile(new URL("../package.json", import.meta.url), "utf8"),
 );
@@ -40,6 +52,31 @@ describe("Global style loading regressions", () => {
 			packageConfig.scripts.build,
 			/node scripts\/check-global-style-loading\.mjs/,
 		);
+	});
+
+	it("loads Markdown styles from the Markdown wrapper", () => {
+		for (const stylesheet of ["markdown.css", "markdown-extend.styl"]) {
+			assert.ok(
+				markdownSource.includes(`import "@/styles/${stylesheet}";`),
+				`${stylesheet} must follow every rendered Markdown surface`,
+			);
+			assert.ok(
+				!encryptorSource.includes(`import "@/styles/${stylesheet}";`),
+				`${stylesheet} must not depend on the optional encryption wrapper`,
+			);
+		}
+
+		assert.ok(
+			encryptorSource.includes('import "@/styles/encrypted-content.css";'),
+			"encrypted content styles must remain owned by the encryption wrapper",
+		);
+		assert.ok(
+			!encryptorSource.includes('import "@/styles/expressive-code.css";'),
+			"global Expressive Code styles must not be duplicated by encryption",
+		);
+		assert.match(globalStyleCheckSource, /about\/index\.html/);
+		assert.match(globalStyleCheckSource, /\.card-github/);
+		assert.match(globalStyleCheckSource, /\.custom-md \.image-grid/);
 	});
 });
 
