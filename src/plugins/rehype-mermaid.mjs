@@ -27,9 +27,9 @@ function hasClass(node, className) {
 				.includes(className);
 }
 
-function diagramSeed(filePath, index, code) {
+function diagramSeed(filePath, index, code, rendererVersion) {
 	const hash = createHash("sha256")
-		.update(`${filePath || "content"}\0${index}\0${code}`)
+		.update(`${rendererVersion}\0${filePath || "content"}\0${index}\0${code}`)
 		.digest("hex")
 		.slice(0, 16);
 	return `mermaid-${hash}`;
@@ -68,13 +68,19 @@ export function assertSafeMermaidSvg(svg) {
 	});
 }
 
-function parseSvg(svgSource, theme, seed) {
+function parseSvg(svgSource, theme) {
 	const tree = fromHtml(svgSource, { fragment: true });
 	const svg = tree.children.find(
 		(node) => node.type === "element" && node.tagName === "svg",
 	);
 	if (!svg) throw new Error("Mermaid renderer did not return an SVG root");
 
+	visit(svg, "element", (node) => {
+		if (Object.hasOwn(node.properties ?? {}, "dataType")) {
+			node.properties.dataMermaidType = node.properties.dataType;
+			delete node.properties.dataType;
+		}
+	});
 	assertSafeMermaidSvg(svg);
 	const existingClasses = Array.isArray(svg.properties?.className)
 		? svg.properties.className
@@ -83,11 +89,7 @@ function parseSvg(svgSource, theme, seed) {
 				.filter(Boolean);
 	svg.properties = {
 		...svg.properties,
-		className: [
-			...existingClasses,
-			"mermaid-svg",
-			`mermaid-svg--${theme}`,
-		],
+		className: [...existingClasses, "mermaid-svg", `mermaid-svg--${theme}`],
 		role: "img",
 		ariaLabel: `Mermaid diagram (${theme} theme)`,
 		dataMermaidTheme: theme,
@@ -98,15 +100,19 @@ function parseSvg(svgSource, theme, seed) {
 function createFallback(code, error) {
 	const message = error instanceof Error ? error.message : String(error);
 	return h("div", { class: "mermaid-error", role: "alert" }, [
-		h("p", { class: "mermaid-error__title" }, "Mermaid diagram could not be rendered."),
+		h(
+			"p",
+			{ class: "mermaid-error__title" },
+			"Mermaid diagram could not be rendered.",
+		),
 		h("p", { class: "mermaid-error__message" }, message),
 		h("pre", { class: "mermaid-source" }, [h("code", {}, code)]),
 	]);
 }
 
 function applyRenderedDiagram(node, code, seed, variants) {
-	const light = parseSvg(variants.light, "light", seed);
-	const dark = parseSvg(variants.dark, "dark", seed);
+	const light = parseSvg(variants.light, "light");
+	const dark = parseSvg(variants.dark, "dark");
 	node.tagName = "div";
 	node.properties = {
 		className: ["mermaid-diagram-container"],
@@ -121,9 +127,7 @@ function applyRenderedDiagram(node, code, seed, variants) {
 					dataMermaidStatic: "true",
 					dataMermaidCode: code,
 				},
-				[
-					h("div", { class: "mermaid-static-variants" }, [light, dark]),
-				],
+				[h("div", { class: "mermaid-static-variants" }, [light, dark])],
 			),
 		]),
 	];
@@ -132,6 +136,7 @@ function applyRenderedDiagram(node, code, seed, variants) {
 export function rehypeMermaid(options = {}) {
 	const render = options.renderer ?? renderMermaidVariants;
 	const errorMode = options.errorMode === "error" ? "error" : "warn";
+	const rendererVersion = options.rendererVersion ?? "browserless-v4";
 	const report = options.onDiagnostic ?? ((message) => console.warn(message));
 
 	return async (tree, file = {}) => {
@@ -149,7 +154,7 @@ export function rehypeMermaid(options = {}) {
 						node.properties?.["data-mermaid-code"] ??
 						"",
 				);
-				const seed = diagramSeed(file.path, index, code);
+				const seed = diagramSeed(file.path, index, code, rendererVersion);
 				try {
 					const variants = await render(code, seed);
 					applyRenderedDiagram(node, code, seed, variants);

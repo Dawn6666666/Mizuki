@@ -57,8 +57,11 @@ describe("shared content pipeline fixture", () => {
 	it("emits build-time Mermaid SVG without a CDN rendering runtime", () => {
 		assert.match(mermaidPluginSource, /`mermaid-svg--\$\{theme\}`/);
 		assert.doesNotMatch(mermaidPluginSource, /Math\.random/);
-		assert.match(mermaidRendererSource, /securityLevel:\s*"strict"/);
-		assert.match(mermaidRendererSource, /deterministicIds:\s*true/);
+		assert.match(mermaidRendererSource, /renderBrowserlessMermaid/);
+		assert.doesNotMatch(
+			mermaidRendererSource,
+			/playwright|puppeteer|chromium|browserExecutable/i,
+		);
 		assert.doesNotMatch(
 			mermaidRuntimeSource,
 			/jsdelivr|unpkg|securityLevel:\s*["']loose["']|\.render\(/,

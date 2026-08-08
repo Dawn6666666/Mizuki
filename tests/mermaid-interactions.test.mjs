@@ -2,6 +2,7 @@ import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
 import { describe, it } from "node:test";
 
+import { renderMermaidVariants } from "../src/plugins/mermaid-static-renderer.mjs";
 import {
 	assertSafeMermaidSvg,
 	rehypeMermaid,
@@ -9,6 +10,10 @@ import {
 
 const layoutSource = await readFile(
 	new URL("../src/layouts/Layout.astro", import.meta.url),
+	"utf8",
+);
+const astroConfigSource = await readFile(
+	new URL("../astro.config.mjs", import.meta.url),
 	"utf8",
 );
 const managerSource = await readFile(
@@ -32,6 +37,10 @@ const markdownStyles = await readFile(
 );
 const expressiveCodeStyles = await readFile(
 	new URL("../src/styles/expressive-code.css", import.meta.url),
+	"utf8",
+);
+const packageSource = await readFile(
+	new URL("../package.json", import.meta.url),
 	"utf8",
 );
 
@@ -91,6 +100,64 @@ describe("Mermaid interaction regressions", () => {
 		);
 		assert.equal(variants.children[0].properties.dataMermaidTheme, "light");
 		assert.equal(variants.children[1].properties.dataMermaidTheme, "dark");
+	});
+
+	it("renders every documented diagram family without a browser runtime", async () => {
+		const diagrams = [
+			"flowchart LR\n  A[Source] --> B[Output]",
+			"sequenceDiagram\n  Alice->>Bob: Hello",
+			"classDiagram\n  Animal <|-- Duck",
+			"stateDiagram-v2\n  [*] --> Ready",
+			"erDiagram\n  USER ||--o{ POST : writes",
+			"xychart-beta\n  x-axis [A, B]\n  bar [1, 2]",
+			"gantt\n  dateFormat YYYY-MM-DD\n  Task :a1, 2026-01-01, 2d",
+			'pie title Share\n  "A" : 60\n  "B" : 40',
+		];
+
+		for (const [index, diagram] of diagrams.entries()) {
+			const seed = `browserless-${index}`;
+			const first = await renderMermaidVariants(diagram, seed);
+			const second = await renderMermaidVariants(diagram, seed);
+			assert.deepEqual(first, second);
+			for (const [theme, svg] of Object.entries(first)) {
+				assert.match(svg, /^<svg\b/);
+				assert.match(svg, new RegExp(`id="${seed}-${theme}`));
+				assert.match(svg, /data-mermaid-renderer="browserless"/);
+				assert.doesNotMatch(svg, /@import|fonts\.googleapis|<script\b/i);
+				assert.doesNotMatch(svg, /\sdatatype=/i);
+			}
+		}
+	});
+
+	it("preserves renderer data attributes through the HAST boundary", async () => {
+		const tree = {
+			type: "root",
+			children: [
+				{
+					type: "element",
+					tagName: "div",
+					properties: {
+						className: ["mermaid-container"],
+						dataMermaidCode:
+							"sequenceDiagram\n  participant Alice\n  Alice->>Alice: Ready",
+					},
+					children: [],
+				},
+			],
+		};
+		await rehypeMermaid()(tree, { path: "sequence.md" });
+		const serialized = JSON.stringify(tree);
+		assert.match(serialized, /"dataMermaidType":"participant"/);
+		assert.doesNotMatch(serialized, /"dataType":/);
+	});
+
+	it("has no Playwright, Puppeteer, or browser executable dependency", () => {
+		assert.match(packageSource, /"beautiful-mermaid": "1\.1\.3"/);
+		assert.match(astroConfigSource, /rendererVersion: "browserless-v4"/);
+		assert.doesNotMatch(
+			packageSource,
+			/"(?:playwright|playwright-core|puppeteer|mermaid-isomorphic)"/,
+		);
 	});
 
 	it("keeps invalid Mermaid source as a readable build diagnostic", async () => {

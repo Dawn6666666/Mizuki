@@ -19,7 +19,7 @@ describe("feed content post-processing", () => {
 			<a class="card-wiki-link" href="../guide/"><div class="wlc-title">Guide</div><div class="wlc-description">Wiki summary</div></a>
 			<span class="katex"><math><mrow><mi>E</mi><mo>=</mo><mi>m</mi></mrow></math></span>
 			<div class="mermaid-static-variants">
-				<svg id="mermaid-1234567890abcdef-light-0" class="mermaid-svg mermaid-svg--light" data-mermaid-theme="light" viewBox="0 0 10 10"><style>#mermaid-1234567890abcdef-light-0 .edge{marker-end:url(#arrow)}</style><defs><marker id="arrow"><path d="M0 0L1 1"/></marker></defs><path class="edge" d="M0 0L10 10"/></svg>
+				<svg id="mermaid-1234567890abcdef-light" class="mermaid-svg mermaid-svg--light" data-mermaid-renderer="browserless" data-mermaid-theme="light" viewBox="0 0 10 10"><style>#mermaid-1234567890abcdef-light .edge{marker-end:url(#mermaid-1234567890abcdef-light-arrow)}</style><defs><marker id="mermaid-1234567890abcdef-light-arrow"><path d="M0 0L1 1"/></marker></defs><path class="edge" d="M0 0L10 10"/></svg>
 				<svg class="mermaid-svg mermaid-svg--dark" viewBox="0 0 10 10"><path d="M0 10L10 0"/></svg>
 			</div>
 			<img src="/images/fixture.webp" alt="Fixture" onerror="alert(1)">

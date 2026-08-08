@@ -33,9 +33,9 @@ Mermaid 在构建期生成亮色、暗色两份静态 SVG。禁用浏览器 Java
 - `warn`：输出明确的源码降级内容并继续构建；
 - `error`：发现无效 Mermaid 时中止构建。
 
-渲染需要 Chromium。CI 已安装 Playwright Chromium；本地或其他部署环境可以运行
-`pnpm exec playwright install chromium`，也可以通过 `MIZUKI_MERMAID_BROWSER`
-指定 Chrome/Edge 可执行文件。
+渲染器直接在 Node.js 中完成解析、布局和 SVG 输出，不启动浏览器、不下载
+Chromium，也不调用外部渲染服务。流程图、时序图、类图、状态图、ER 图、XY 图、
+Gantt 图和饼图都能用于正式构建；不支持或无效的语法仍遵循上述 `errorMode`。
 
 ### Wiki Link 封面
 

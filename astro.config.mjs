@@ -250,7 +250,14 @@ export default defineConfig({
 				rehypeSlug,
 				...(expressiveCodeConfig.codeGroup.enable ? [rehypeCodeGroup] : []),
 				rehypeWrapTable,
-				[rehypeMermaid, markdownConfig.mermaid],
+				[
+					rehypeMermaid,
+					{
+						...markdownConfig.mermaid,
+						// Bump when static SVG output changes so Astro drops stale content.
+						rendererVersion: "browserless-v4",
+					},
+				],
 				rehypePlantuml,
 				[
 					rehypeComponents,
