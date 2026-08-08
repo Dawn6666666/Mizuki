@@ -105,4 +105,3 @@ export async function renderMermaidVariants(code, seed) {
 	]);
 	return { light, dark };
 }
-
