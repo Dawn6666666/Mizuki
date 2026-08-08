@@ -14,6 +14,10 @@ const atomSource = await readFile(
 	new URL("../src/pages/atom.xml.ts", import.meta.url),
 	"utf8",
 );
+const feedDataSource = await readFile(
+	new URL("../src/utils/feed-data.ts", import.meta.url),
+	"utf8",
+);
 const mermaidPluginSource = await readFile(
 	new URL("../src/plugins/rehype-mermaid.mjs", import.meta.url),
 	"utf8",
@@ -44,9 +48,10 @@ describe("shared content pipeline fixture", () => {
 
 	it("routes RSS and Atom through one shared content renderer", () => {
 		for (const source of [rssSource, atomSource]) {
-			assert.match(source, /renderPostContent/);
+			assert.match(source, /getFeedContentItems/);
 			assert.doesNotMatch(source, /MarkdownIt|markdownParser\.render/);
 		}
+		assert.match(feedDataSource, /renderPostContent/);
 	});
 
 	it("emits build-time Mermaid SVG without a CDN rendering runtime", () => {
