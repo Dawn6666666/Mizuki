@@ -18,7 +18,7 @@
     "preview": "astro preview",
     "astro": "astro",
     "type-check": "tsc --noEmit",
-    "test": "node --experimental-strip-types --test tests/markdown-enhancements.test.mjs tests/layout-regressions.test.mjs tests/mermaid-interactions.test.mjs tests/image-loading.test.mjs tests/music-player-loading.test.mjs tests/font-loading.test.mjs && node tests/crypto.test.mjs",
+    "test": "node --experimental-strip-types --test tests/content-pipeline.test.mjs tests/markdown-enhancements.test.mjs tests/layout-regressions.test.mjs tests/mermaid-interactions.test.mjs tests/image-loading.test.mjs tests/music-player-loading.test.mjs tests/font-loading.test.mjs && node tests/crypto.test.mjs",
     "prepare-fonts": "node scripts/prepare-fonts.mjs",
     "check-fonts": "node scripts/check-font-loading.mjs",
     "prepare-images": "node scripts/prepare-default-images.mjs",
@@ -99,6 +99,9 @@
     "@types/sanitize-html": "^2.16.1",
     "fonteditor-core": "^2.6.3",
     "glob": "^13.0.6",
+    "hast-util-from-html": "2.0.3",
+    "mermaid-isomorphic": "3.1.0",
+    "playwright": "1.62.1",
     "postcss-import": "^16.1.1",
     "postcss-nesting": "^14.0.0"
   },

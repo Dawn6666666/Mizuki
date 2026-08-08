@@ -1,4 +1,7 @@
 export interface MarkdownEnhancementConfig {
+	mermaid: {
+		errorMode: "warn" | "error";
+	};
 	autoImageGrid: {
 		enable: boolean;
 		minImages: number;
@@ -22,6 +25,10 @@ export interface MarkdownEnhancementConfig {
  * 功能或改用自托管服务器。
  */
 export const markdownConfig: MarkdownEnhancementConfig = {
+	mermaid: {
+		// warn 会保留源码降级；error 会让无效 Mermaid 语法中止构建。
+		errorMode: "warn",
+	},
 	autoImageGrid: {
 		enable: true,
 		minImages: 2,

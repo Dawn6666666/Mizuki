@@ -1,42 +1,167 @@
+import { createHash } from "node:crypto";
+
+import { fromHtml } from "hast-util-from-html";
 import { h } from "hastscript";
 import { visit } from "unist-util-visit";
 
-export function rehypeMermaid() {
-	return (tree) => {
+import { renderMermaidVariants } from "./mermaid-static-renderer.mjs";
+
+const DANGEROUS_SVG_TAGS = new Set([
+	"script",
+	"iframe",
+	"object",
+	"embed",
+	"audio",
+	"video",
+]);
+const URL_PROPERTY = /^(?:href|xLinkHref|src)$/i;
+const DANGEROUS_URL = /^\s*(?:javascript|vbscript|data:text\/html)/i;
+const DANGEROUS_CSS = /(?:@import|expression\s*\(|url\s*\(\s*["']?(?!#))/i;
+
+function hasClass(node, className) {
+	const value = node.properties?.className;
+	return Array.isArray(value)
+		? value.includes(className)
+		: String(value ?? "")
+				.split(/\s+/)
+				.includes(className);
+}
+
+function diagramSeed(filePath, index, code) {
+	const hash = createHash("sha256")
+		.update(`${filePath || "content"}\0${index}\0${code}`)
+		.digest("hex")
+		.slice(0, 16);
+	return `mermaid-${hash}`;
+}
+
+export function assertSafeMermaidSvg(svg) {
+	visit(svg, "element", (node) => {
+		if (DANGEROUS_SVG_TAGS.has(node.tagName)) {
+			throw new Error(`Unsafe Mermaid SVG tag: <${node.tagName}>`);
+		}
+
+		for (const [name, rawValue] of Object.entries(node.properties ?? {})) {
+			if (/^on/i.test(name)) {
+				throw new Error(`Unsafe Mermaid SVG event attribute: ${name}`);
+			}
+			const value = Array.isArray(rawValue)
+				? rawValue.join(" ")
+				: String(rawValue ?? "");
+			if (URL_PROPERTY.test(name) && DANGEROUS_URL.test(value)) {
+				throw new Error(`Unsafe Mermaid SVG URL in ${name}`);
+			}
+			if (name === "style" && DANGEROUS_CSS.test(value)) {
+				throw new Error("Unsafe Mermaid SVG inline style");
+			}
+		}
+
+		if (node.tagName === "style") {
+			const css = (node.children ?? [])
+				.filter((child) => child.type === "text")
+				.map((child) => child.value)
+				.join("");
+			if (DANGEROUS_CSS.test(css)) {
+				throw new Error("Unsafe Mermaid SVG stylesheet");
+			}
+		}
+	});
+}
+
+function parseSvg(svgSource, theme, seed) {
+	const tree = fromHtml(svgSource, { fragment: true });
+	const svg = tree.children.find(
+		(node) => node.type === "element" && node.tagName === "svg",
+	);
+	if (!svg) throw new Error("Mermaid renderer did not return an SVG root");
+
+	assertSafeMermaidSvg(svg);
+	const existingClasses = Array.isArray(svg.properties?.className)
+		? svg.properties.className
+		: String(svg.properties?.className ?? "")
+				.split(/\s+/)
+				.filter(Boolean);
+	svg.properties = {
+		...svg.properties,
+		className: [
+			...existingClasses,
+			"mermaid-svg",
+			`mermaid-svg--${theme}`,
+		],
+		role: "img",
+		ariaLabel: `Mermaid diagram (${theme} theme)`,
+		dataMermaidTheme: theme,
+	};
+	return svg;
+}
+
+function createFallback(code, error) {
+	const message = error instanceof Error ? error.message : String(error);
+	return h("div", { class: "mermaid-error", role: "alert" }, [
+		h("p", { class: "mermaid-error__title" }, "Mermaid diagram could not be rendered."),
+		h("p", { class: "mermaid-error__message" }, message),
+		h("pre", { class: "mermaid-source" }, [h("code", {}, code)]),
+	]);
+}
+
+function applyRenderedDiagram(node, code, seed, variants) {
+	const light = parseSvg(variants.light, "light", seed);
+	const dark = parseSvg(variants.dark, "dark", seed);
+	node.tagName = "div";
+	node.properties = {
+		className: ["mermaid-diagram-container"],
+		dataDiagramId: seed,
+	};
+	node.children = [
+		h("div", { class: "mermaid-wrapper", id: seed }, [
+			h(
+				"div",
+				{
+					class: "mermaid",
+					dataMermaidStatic: "true",
+					dataMermaidCode: code,
+				},
+				[
+					h("div", { class: "mermaid-static-variants" }, [light, dark]),
+				],
+			),
+		]),
+	];
+}
+
+export function rehypeMermaid(options = {}) {
+	const render = options.renderer ?? renderMermaidVariants;
+	const errorMode = options.errorMode === "error" ? "error" : "warn";
+	const report = options.onDiagnostic ?? ((message) => console.warn(message));
+
+	return async (tree, file = {}) => {
+		const diagrams = [];
 		visit(tree, "element", (node) => {
-			if (
-				node.tagName === "div" &&
-				node.properties &&
-				node.properties.className &&
-				node.properties.className.includes("mermaid-container")
-			) {
-				const mermaidCode = node.properties["data-mermaid-code"] || "";
-				const mermaidId = `mermaid-${Math.random().toString(36).slice(-6)}`;
-
-				// 创建 Mermaid 容器
-				const mermaidContainer = h(
-					"div",
-					{
-						class: "mermaid-wrapper",
-						id: mermaidId,
-					},
-					[
-						h(
-							"div",
-							{
-								class: "mermaid",
-								"data-mermaid-code": mermaidCode,
-							},
-							mermaidCode,
-						),
-					],
-				);
-
-				// 替换原始节点
-				node.tagName = "div";
-				node.properties = { class: "mermaid-diagram-container" };
-				node.children = [mermaidContainer];
+			if (node.tagName === "div" && hasClass(node, "mermaid-container")) {
+				diagrams.push(node);
 			}
 		});
+
+		await Promise.all(
+			diagrams.map(async (node, index) => {
+				const code = String(
+					node.properties?.dataMermaidCode ??
+						node.properties?.["data-mermaid-code"] ??
+						"",
+				);
+				const seed = diagramSeed(file.path, index, code);
+				try {
+					const variants = await render(code, seed);
+					applyRenderedDiagram(node, code, seed, variants);
+				} catch (error) {
+					const message = `[rehype-mermaid] ${file.path || "content"} diagram ${index + 1}: ${error instanceof Error ? error.message : String(error)}`;
+					if (errorMode === "error") throw new Error(message, { cause: error });
+					report(message);
+					node.tagName = "div";
+					node.properties = { className: ["mermaid-diagram-container"] };
+					node.children = [createFallback(code, error)];
+				}
+			}),
+		);
 	};
 }

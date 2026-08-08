@@ -2,7 +2,10 @@ import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
 import { describe, it } from "node:test";
 
-import { rehypeMermaid } from "../src/plugins/rehype-mermaid.mjs";
+import {
+	assertSafeMermaidSvg,
+	rehypeMermaid,
+} from "../src/plugins/rehype-mermaid.mjs";
 
 const layoutSource = await readFile(
 	new URL("../src/layouts/Layout.astro", import.meta.url),
@@ -46,10 +49,11 @@ describe("Mermaid interaction regressions", () => {
 			rehypeSource,
 			/mermaidRenderScript|h\(\s*["']script["']/,
 		);
-		assert.match(interactionSource, /if \(window\.mermaid\?\.render\) return/);
+		assert.match(interactionSource, /data-mermaid-static/);
+		assert.doesNotMatch(interactionSource, /jsdelivr|unpkg|securityLevel/);
 	});
 
-	it("emits only diagram markup from the Markdown transformer", () => {
+	it("emits deterministic light and dark static SVG markup", async () => {
 		const tree = {
 			type: "root",
 			children: [
@@ -65,14 +69,83 @@ describe("Mermaid interaction regressions", () => {
 			],
 		};
 
-		rehypeMermaid()(tree);
+		await rehypeMermaid({
+			renderer: async (_code, seed) => ({
+				light: `<svg id="${seed}-source-light" viewBox="0 0 10 10"><path d="M0 0L10 10"/></svg>`,
+				dark: `<svg id="${seed}-source-dark" viewBox="0 0 10 10"><path d="M0 10L10 0"/></svg>`,
+			}),
+		})(tree, { path: "fixture.md" });
 		assert.equal(
-			tree.children[0].properties.class,
+			tree.children[0].properties.className[0],
 			"mermaid-diagram-container",
 		);
 		assert.equal(tree.children[0].children.length, 1);
 		assert.equal(tree.children[0].children[0].tagName, "div");
 		assert.equal(tree.children[0].children[0].children[0].tagName, "div");
+		const variants = tree.children[0].children[0].children[0].children[0];
+		assert.equal(variants.properties.className[0], "mermaid-static-variants");
+		assert.equal(variants.children.length, 2);
+		assert.match(
+			variants.children[0].properties.id,
+			/^mermaid-[a-f0-9]{16}-source-light$/,
+		);
+		assert.equal(variants.children[0].properties.dataMermaidTheme, "light");
+		assert.equal(variants.children[1].properties.dataMermaidTheme, "dark");
+	});
+
+	it("keeps invalid Mermaid source as a readable build diagnostic", async () => {
+		const diagnostics = [];
+		const tree = {
+			type: "root",
+			children: [
+				{
+					type: "element",
+					tagName: "div",
+					properties: {
+						className: ["mermaid-container"],
+						dataMermaidCode: "not valid Mermaid",
+					},
+					children: [],
+				},
+			],
+		};
+
+		await rehypeMermaid({
+			renderer: async () => {
+				throw new Error("Parse error on line 1");
+			},
+			onDiagnostic: (message) => diagnostics.push(message),
+		})(tree, { path: "invalid.md" });
+
+		assert.equal(diagnostics.length, 1);
+		assert.match(diagnostics[0], /invalid\.md diagram 1: Parse error/);
+		const fallback = tree.children[0].children[0];
+		assert.equal(fallback.properties.className[0], "mermaid-error");
+		assert.equal(fallback.children[2].tagName, "pre");
+		assert.equal(
+			fallback.children[2].children[0].children[0].value,
+			"not valid Mermaid",
+		);
+	});
+
+	it("rejects executable SVG tags, event handlers, and dangerous URLs", () => {
+		for (const node of [
+			{ type: "element", tagName: "script", properties: {}, children: [] },
+			{
+				type: "element",
+				tagName: "path",
+				properties: { onClick: "alert(1)" },
+				children: [],
+			},
+			{
+				type: "element",
+				tagName: "a",
+				properties: { href: "javascript:alert(1)" },
+				children: [],
+			},
+		]) {
+			assert.throws(() => assertSafeMermaidSvg(node), /Unsafe Mermaid SVG/);
+		}
 	});
 
 	it("keeps fullscreen in the shared toolbar and the draggable viewport separate", () => {

@@ -260,41 +260,31 @@ a.card-github.fetch-error
   text-align: center
 
 .mermaid
-  min-height: 100px
   font-family: inherit
   position: relative
   overflow: hidden
 
-  .mermaid-zoom-wrapper > svg
-    max-width: 100%
-    height: auto
-    border-radius: 0.5rem
-    user-select: none
-    pointer-events: all
+.mermaid-static-variants
+  width: 100%
 
-.mermaid-loading
-  display: flex
-  align-items: center
-  justify-content: center
-  padding: 2rem
-  color: var(--text-color-secondary)
-  font-style: italic
-  
-  &::before
-    content: ""
-    width: 20px
-    height: 20px
-    border: 2px solid var(--primary)
-    border-top: 2px solid transparent
-    border-radius: 50%
-    animation: spin 1s linear infinite
-    margin-right: 0.5rem
+.mermaid-svg
+  display: block
+  width: 100%
+  max-width: 100%
+  height: auto
+  margin: 0 auto
+  border-radius: 0.5rem
+  user-select: none
+  pointer-events: all
 
-@keyframes spin
-  0%
-    transform: rotate(0deg)
-  100%
-    transform: rotate(360deg)
+.mermaid-svg--dark
+  display: none
+
+.dark .mermaid-svg--light
+  display: none
+
+.dark .mermaid-svg--dark
+  display: block
 
 .mermaid-error
   color: var(--admonitions-color-warning)
@@ -309,33 +299,25 @@ a.card-github.fetch-error
   p
     margin: 0 0 0.5rem 0
     
-  button
-    transition: all 0.2s ease
-    
-    &:hover
-      background: var(--primary-hover) !important
-      transform: translateY(-1px)
-
-// 深色模式下的 Mermaid 样式
-.dark .mermaid-diagram-container
-  background: var(--card-bg)
-
-  .mermaid-zoom-wrapper > svg
-    filter: brightness(0.9) contrast(1.1)
+.mermaid-source
+  margin: .75rem 0 0
+  overflow: auto
+  text-align: left
+  white-space: pre
 
 // 响应式设计
 @media (max-width: 768px)
   .mermaid-wrapper
     padding: 1rem
 
-  .mermaid .mermaid-zoom-wrapper > svg
+  .mermaid-svg
     max-height: 400px
 
 
 .mermaid-viewport
   display: grid
   width: 100%
-  min-height: 300px
+  min-height: 8rem
   place-items: center
   overflow: hidden
   box-sizing: border-box
@@ -452,15 +434,6 @@ a.card-github.fetch-error
   width: 2.5rem
   height: 2.5rem
   font-size: 1.5rem
-
-.mermaid-error button
-  margin-top: .5rem
-  padding: .25rem .5rem
-  color: white
-  border: 0
-  border-radius: .25rem
-  background: var(--primary)
-  cursor: pointer
 
 body.mermaid-fullscreen-open
   overflow: hidden

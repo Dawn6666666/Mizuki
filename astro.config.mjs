@@ -253,7 +253,7 @@ export default defineConfig({
 				rehypeSlug,
 				...(expressiveCodeConfig.codeGroup.enable ? [rehypeCodeGroup] : []),
 				rehypeWrapTable,
-				rehypeMermaid,
+				[rehypeMermaid, markdownConfig.mermaid],
 				rehypePlantuml,
 				[
 					rehypeComponents,
