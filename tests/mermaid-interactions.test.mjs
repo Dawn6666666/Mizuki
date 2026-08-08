@@ -160,12 +160,57 @@ describe("Mermaid interaction regressions", () => {
 		assert.match(packageSource, /"svgdom": "0\.1\.28"/);
 		assert.match(
 			astroConfigSource,
-			/rendererVersion: `official-node-v3-\$\{customFontsEnabled/,
+			/rendererVersion: `official-node-v4-\$\{customFontsEnabled/,
 		);
 		assert.doesNotMatch(
 			packageSource,
 			/"(?:beautiful-mermaid|playwright|playwright-core|puppeteer|mermaid-isomorphic)"/,
 		);
+	});
+
+	it("normalizes edge label baselines without shifting node labels", async () => {
+		const tree = {
+			type: "root",
+			children: [
+				{
+					type: "element",
+					tagName: "div",
+					properties: {
+						className: ["mermaid-container"],
+						dataMermaidCode: "graph TD\n  A[Start] -->|Yes| B[Process Step]",
+					},
+					children: [],
+				},
+			],
+		};
+		await rehypeMermaid({ fontMode: "custom" })(tree, {
+			path: "edge-label-baseline.md",
+		});
+
+		const edgeLabelDy = [];
+		const nodeLabelDy = [];
+		function collectOuterTspans(node, insideEdgeLabel = false) {
+			if (node.type !== "element") return;
+			const classes = Array.isArray(node.properties?.className)
+				? node.properties.className
+				: [];
+			const isInsideEdgeLabel =
+				insideEdgeLabel || classes.includes("edgeLabel");
+			if (node.tagName === "tspan" && classes.includes("text-outer-tspan")) {
+				(isInsideEdgeLabel ? edgeLabelDy : nodeLabelDy).push(
+					node.properties.dy,
+				);
+			}
+			for (const child of node.children ?? []) {
+				collectOuterTspans(child, isInsideEdgeLabel);
+			}
+		}
+		collectOuterTspans(tree.children[0]);
+
+		assert.ok(edgeLabelDy.length > 0, "fixture should contain an edge label");
+		assert.ok(nodeLabelDy.length > 0, "fixture should contain node labels");
+		assert.deepEqual([...new Set(edgeLabelDy)], ["0.1em"]);
+		assert.deepEqual([...new Set(nodeLabelDy)], ["1.1em"]);
 	});
 
 	it("keeps official Mermaid flowchart layout and theme output", async () => {

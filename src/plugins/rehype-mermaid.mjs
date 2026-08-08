@@ -27,6 +27,26 @@ function hasClass(node, className) {
 				.includes(className);
 }
 
+function normalizeEdgeLabelBaselines(node, insideEdgeLabel = false) {
+	if (node.type !== "element") return;
+	const isInsideEdgeLabel = insideEdgeLabel || hasClass(node, "edgeLabel");
+
+	if (
+		isInsideEdgeLabel &&
+		node.tagName === "tspan" &&
+		hasClass(node, "text-outer-tspan") &&
+		node.properties?.dy === "1.1em"
+	) {
+		// svgdom measures this Mermaid tspan at the zero baseline, while browsers
+		// also apply its serialized 1em line offset. Keep the measured geometry.
+		node.properties.dy = "0.1em";
+	}
+
+	for (const child of node.children ?? []) {
+		normalizeEdgeLabelBaselines(child, isInsideEdgeLabel);
+	}
+}
+
 function diagramSeed(filePath, index, code, rendererVersion) {
 	const hash = createHash("sha256")
 		.update(`${rendererVersion}\0${filePath || "content"}\0${index}\0${code}`)
@@ -75,6 +95,7 @@ function parseSvg(svgSource, theme) {
 	);
 	if (!svg) throw new Error("Mermaid renderer did not return an SVG root");
 
+	normalizeEdgeLabelBaselines(svg);
 	visit(svg, "element", (node) => {
 		if (Object.hasOwn(node.properties ?? {}, "dataType")) {
 			node.properties.dataMermaidType = node.properties.dataType;
@@ -141,7 +162,7 @@ function applyRenderedDiagram(node, code, seed, variants) {
 export function rehypeMermaid(options = {}) {
 	const render = options.renderer ?? renderMermaidVariants;
 	const errorMode = options.errorMode === "error" ? "error" : "warn";
-	const rendererVersion = options.rendererVersion ?? "official-node-v3-custom";
+	const rendererVersion = options.rendererVersion ?? "official-node-v4-custom";
 	const fontMode = options.fontMode === "system" ? "system" : "custom";
 	const report = options.onDiagnostic ?? ((message) => console.warn(message));
 
