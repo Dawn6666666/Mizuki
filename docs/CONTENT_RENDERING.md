@@ -33,9 +33,10 @@ Mermaid 在构建期生成亮色、暗色两份静态 SVG。禁用浏览器 Java
 - `warn`：输出明确的源码降级内容并继续构建；
 - `error`：发现无效 Mermaid 时中止构建。
 
-渲染器直接在 Node.js 中完成解析、布局和 SVG 输出，不启动浏览器、不下载
-Chromium，也不调用外部渲染服务。流程图、时序图、类图、状态图、ER 图、XY 图、
-Gantt 图和饼图都能用于正式构建；不支持或无效的语法仍遵循上述 `errorMode`。
+渲染器使用 Mermaid 官方引擎在隔离的 Node.js Worker 中完成解析、布局和 SVG
+输出，并由轻量 SVG DOM 提供文字与图形测量。它不会启动浏览器、下载 Chromium，
+也不调用外部渲染服务。流程图、时序图、类图、状态图、ER 图、XY 图、Gantt 图和
+饼图都能用于正式构建；不支持或无效的语法仍遵循上述 `errorMode`。
 
 ### Wiki Link 封面
 

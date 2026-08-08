@@ -255,7 +255,7 @@ export default defineConfig({
 					{
 						...markdownConfig.mermaid,
 						// Bump when static SVG output changes so Astro drops stale content.
-						rendererVersion: "browserless-v4",
+						rendererVersion: "official-node-v2",
 					},
 				],
 				rehypePlantuml,

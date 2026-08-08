@@ -171,6 +171,7 @@ export const SAFE_FEED_SVG_ATTRIBUTES = [
 	"flood-opacity",
 	"font-family",
 	"font-size",
+	"font-style",
 	"font-weight",
 	"height",
 	"href",
@@ -403,7 +404,7 @@ function isSafeGeneratedMermaidSvg(svg: ReturnType<typeof parse>): boolean {
 	const id = svg.getAttribute("id") ?? "";
 	if (
 		!/^mermaid-[a-f0-9]{16}-light$/.test(id) ||
-		svg.getAttribute("data-mermaid-renderer") !== "browserless" ||
+		svg.getAttribute("data-mermaid-renderer") !== "official" ||
 		svg.getAttribute("data-mermaid-theme") !== "light"
 	) {
 		return false;

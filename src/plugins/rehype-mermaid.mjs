@@ -80,6 +80,10 @@ function parseSvg(svgSource, theme) {
 			node.properties.dataMermaidType = node.properties.dataType;
 			delete node.properties.dataType;
 		}
+		if (Object.hasOwn(node.properties ?? {}, "textHeight")) {
+			node.properties.dataMermaidTextHeight = node.properties.textHeight;
+			delete node.properties.textHeight;
+		}
 	});
 	assertSafeMermaidSvg(svg);
 	const existingClasses = Array.isArray(svg.properties?.className)
@@ -92,6 +96,7 @@ function parseSvg(svgSource, theme) {
 		className: [...existingClasses, "mermaid-svg", `mermaid-svg--${theme}`],
 		role: "img",
 		ariaLabel: `Mermaid diagram (${theme} theme)`,
+		dataMermaidRenderer: "official",
 		dataMermaidTheme: theme,
 	};
 	return svg;
@@ -136,7 +141,7 @@ function applyRenderedDiagram(node, code, seed, variants) {
 export function rehypeMermaid(options = {}) {
 	const render = options.renderer ?? renderMermaidVariants;
 	const errorMode = options.errorMode === "error" ? "error" : "warn";
-	const rendererVersion = options.rendererVersion ?? "browserless-v4";
+	const rendererVersion = options.rendererVersion ?? "official-node-v2";
 	const report = options.onDiagnostic ?? ((message) => console.warn(message));
 
 	return async (tree, file = {}) => {

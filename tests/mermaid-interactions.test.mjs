@@ -103,6 +103,7 @@ describe("Mermaid interaction regressions", () => {
 	});
 
 	it("renders every documented diagram family without a browser runtime", async () => {
+		const documentBeforeRender = globalThis.document;
 		const diagrams = [
 			"flowchart LR\n  A[Source] --> B[Output]",
 			"sequenceDiagram\n  Alice->>Bob: Hello",
@@ -115,18 +116,19 @@ describe("Mermaid interaction regressions", () => {
 		];
 
 		for (const [index, diagram] of diagrams.entries()) {
-			const seed = `browserless-${index}`;
+			const seed = `official-${index}`;
 			const first = await renderMermaidVariants(diagram, seed);
 			const second = await renderMermaidVariants(diagram, seed);
 			assert.deepEqual(first, second);
 			for (const [theme, svg] of Object.entries(first)) {
 				assert.match(svg, /^<svg\b/);
 				assert.match(svg, new RegExp(`id="${seed}-${theme}`));
-				assert.match(svg, /data-mermaid-renderer="browserless"/);
+				assert.match(svg, /aria-roledescription=/);
 				assert.doesNotMatch(svg, /@import|fonts\.googleapis|<script\b/i);
 				assert.doesNotMatch(svg, /\sdatatype=/i);
 			}
 		}
+		assert.equal(globalThis.document, documentBeforeRender);
 	});
 
 	it("preserves renderer data attributes through the HAST boundary", async () => {
@@ -147,17 +149,46 @@ describe("Mermaid interaction regressions", () => {
 		};
 		await rehypeMermaid()(tree, { path: "sequence.md" });
 		const serialized = JSON.stringify(tree);
+		assert.match(serialized, /"dataMermaidRenderer":"official"/);
 		assert.match(serialized, /"dataMermaidType":"participant"/);
 		assert.doesNotMatch(serialized, /"dataType":/);
+		assert.match(serialized, /"ariaRoleDescription":\["sequence"\]/);
 	});
 
 	it("has no Playwright, Puppeteer, or browser executable dependency", () => {
-		assert.match(packageSource, /"beautiful-mermaid": "1\.1\.3"/);
-		assert.match(astroConfigSource, /rendererVersion: "browserless-v4"/);
+		assert.match(packageSource, /"mermaid": "11\.16\.1"/);
+		assert.match(packageSource, /"svgdom": "0\.1\.28"/);
+		assert.match(astroConfigSource, /rendererVersion: "official-node-v2"/);
 		assert.doesNotMatch(
 			packageSource,
-			/"(?:playwright|playwright-core|puppeteer|mermaid-isomorphic)"/,
+			/"(?:beautiful-mermaid|playwright|playwright-core|puppeteer|mermaid-isomorphic)"/,
 		);
+	});
+
+	it("keeps official Mermaid flowchart layout and theme output", async () => {
+		const diagram = `graph TD
+			A[Start] --> B{Condition Check}
+			B -->|Yes| C[Process Step 1]
+			B -->|No| D[Process Step 2]
+			C --> E[Subprocess]
+			D --> E
+			subgraph E [Subprocess Details]
+				E1[Substep 1] --> E2[Substep 2]
+				E2 --> E3[Substep 3]
+			end`;
+		const { light, dark } = await renderMermaidVariants(
+			diagram,
+			"official-layout",
+		);
+		assert.match(light, /aria-roledescription="flowchart-v2"/);
+		assert.match(light, /class="cluster-label\s*"/);
+		assert.match(light, /fill:#ECECFF;stroke:#9370DB/i);
+		assert.match(dark, /fill:#1f2020;stroke:#ccc/i);
+		const [, width, height] = light.match(
+			/viewBox="[^ ]+ [^ ]+ ([\d.]+) ([\d.]+)"/,
+		);
+		assert.ok(Number(width) > 500, "official Dagre layout should stay wide");
+		assert.ok(Number(height) > 500, "subgraph should retain its full height");
 	});
 
 	it("keeps invalid Mermaid source as a readable build diagnostic", async () => {

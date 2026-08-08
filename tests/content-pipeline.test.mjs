@@ -30,6 +30,10 @@ const mermaidRendererSource = await readFile(
 	new URL("../src/plugins/mermaid-static-renderer.mjs", import.meta.url),
 	"utf8",
 );
+const mermaidWorkerSource = await readFile(
+	new URL("../src/plugins/mermaid-render-worker.mjs", import.meta.url),
+	"utf8",
+);
 
 describe("shared content pipeline fixture", () => {
 	it("covers MDX, callouts, Wiki Links, code groups, math, diagrams, and images", () => {
@@ -57,9 +61,11 @@ describe("shared content pipeline fixture", () => {
 	it("emits build-time Mermaid SVG without a CDN rendering runtime", () => {
 		assert.match(mermaidPluginSource, /`mermaid-svg--\$\{theme\}`/);
 		assert.doesNotMatch(mermaidPluginSource, /Math\.random/);
-		assert.match(mermaidRendererSource, /renderBrowserlessMermaid/);
+		assert.match(mermaidRendererSource, /new Worker/);
+		assert.match(mermaidWorkerSource, /from "svgdom"/);
+		assert.match(mermaidWorkerSource, /await import\("mermaid"\)/);
 		assert.doesNotMatch(
-			mermaidRendererSource,
+			`${mermaidRendererSource}\n${mermaidWorkerSource}`,
 			/playwright|puppeteer|chromium|browserExecutable/i,
 		);
 		assert.doesNotMatch(
