@@ -66,6 +66,8 @@ describe("shared content pipeline fixture", () => {
 		assert.match(mermaidWorkerSource, /await import\("mermaid"\)/);
 		assert.match(mermaidWorkerSource, /setFontFamilyMappings/);
 		assert.match(mermaidWorkerSource, /CUSTOM_OUTPUT_FONT_FAMILY/);
+		assert.match(mermaidWorkerSource, /installSvgTextUnitNormalization/);
+		assert.match(mermaidWorkerSource, /normalizeLabelLineBreaks/);
 		assert.doesNotMatch(
 			`${mermaidRendererSource}\n${mermaidWorkerSource}`,
 			/playwright|puppeteer|chromium|browserExecutable/i,

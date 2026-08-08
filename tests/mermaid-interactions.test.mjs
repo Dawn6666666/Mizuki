@@ -160,7 +160,7 @@ describe("Mermaid interaction regressions", () => {
 		assert.match(packageSource, /"svgdom": "0\.1\.28"/);
 		assert.match(
 			astroConfigSource,
-			/rendererVersion: `official-node-v4-\$\{customFontsEnabled/,
+			/rendererVersion: `official-node-v5-\$\{customFontsEnabled/,
 		);
 		assert.doesNotMatch(
 			packageSource,
@@ -168,49 +168,28 @@ describe("Mermaid interaction regressions", () => {
 		);
 	});
 
-	it("normalizes edge label baselines without shifting node labels", async () => {
-		const tree = {
-			type: "root",
-			children: [
-				{
-					type: "element",
-					tagName: "div",
-					properties: {
-						className: ["mermaid-container"],
-						dataMermaidCode: "graph TD\n  A[Start] -->|Yes| B[Process Step]",
-					},
-					children: [],
-				},
-			],
-		};
-		await rehypeMermaid({ fontMode: "custom" })(tree, {
-			path: "edge-label-baseline.md",
-		});
+	it("preserves multiline node labels with browser-equivalent SVG units", async () => {
+		const { light } = await renderMermaidVariants(
+			'graph LR\n  A["第一行<br/>第二行<br>第三行"] -->|继续| B[完成]',
+			"multiline-label-units",
+			{ fontMode: "custom" },
+		);
 
-		const edgeLabelDy = [];
-		const nodeLabelDy = [];
-		function collectOuterTspans(node, insideEdgeLabel = false) {
-			if (node.type !== "element") return;
-			const classes = Array.isArray(node.properties?.className)
-				? node.properties.className
-				: [];
-			const isInsideEdgeLabel =
-				insideEdgeLabel || classes.includes("edgeLabel");
-			if (node.tagName === "tspan" && classes.includes("text-outer-tspan")) {
-				(isInsideEdgeLabel ? edgeLabelDy : nodeLabelDy).push(
-					node.properties.dy,
-				);
-			}
-			for (const child of node.children ?? []) {
-				collectOuterTspans(child, isInsideEdgeLabel);
-			}
-		}
-		collectOuterTspans(tree.children[0]);
-
-		assert.ok(edgeLabelDy.length > 0, "fixture should contain an edge label");
-		assert.ok(nodeLabelDy.length > 0, "fixture should contain node labels");
-		assert.deepEqual([...new Set(edgeLabelDy)], ["0.1em"]);
-		assert.deepEqual([...new Set(nodeLabelDy)], ["1.1em"]);
+		assert.match(light, />第一行<\/tspan>/);
+		assert.match(light, />第二行<\/tspan>/);
+		assert.match(light, />第三行<\/tspan>/);
+		assert.doesNotMatch(light, /<br\s*\/?/i);
+		assert.match(
+			light,
+			/class="text-outer-tspan row" x="0" y="-1\.6" dy="17\.6"/,
+		);
+		assert.match(light, /class="text-outer-tspan row" x="0" y="16" dy="17\.6"/);
+		const nodeBox = light.match(
+			/flowchart-A-0[\s\S]*?class="basic label-container"[^>]*width="([\d.]+)" height="([\d.]+)"/,
+		);
+		assert.ok(nodeBox, "multiline node should have a measured shape");
+		assert.ok(Number(nodeBox[1]) > 60, "node should fit its label width");
+		assert.ok(Number(nodeBox[2]) > 70, "node should fit three text lines");
 	});
 
 	it("keeps official Mermaid flowchart layout and theme output", async () => {

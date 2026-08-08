@@ -7,6 +7,9 @@ const CUSTOM_FONT_FAMILY = "ZenMaruGothic-Medium, sans-serif";
 const CUSTOM_OUTPUT_FONT_FAMILY =
 	"var(--font-body, sans-serif), var(--font-cjk, sans-serif), sans-serif";
 const SYSTEM_FONT_FAMILY = "sans-serif";
+const SVG_TEXT_POSITION_ATTRIBUTE = /^(?:x|y|dx|dy)$/;
+const SVG_EM_LENGTH = /^(-?(?:\d+(?:\.\d+)?|\.\d+))em$/i;
+const MERMAID_FONT_SIZE = 16;
 
 const LIGHT_THEME = {
 	theme: "default",
@@ -34,6 +37,32 @@ const DARK_THEME = {
 	},
 };
 
+function installSvgTextUnitNormalization() {
+	const setAttribute = svgdom.Element.prototype.setAttribute;
+	Object.defineProperty(svgdom.Element.prototype, "setAttribute", {
+		configurable: true,
+		writable: true,
+		value(name, value) {
+			const match =
+				(this.nodeName === "text" || this.nodeName === "tspan") &&
+				SVG_TEXT_POSITION_ATTRIBUTE.test(name)
+					? String(value).trim().match(SVG_EM_LENGTH)
+					: null;
+			return setAttribute.call(
+				this,
+				name,
+				match ? String(Number(match[1]) * MERMAID_FONT_SIZE) : value,
+			);
+		},
+	});
+}
+
+function normalizeLabelLineBreaks(code) {
+	// DOMPurify relies on a browser HTML parser for <br>. Mermaid's escaped
+	// newline syntax reaches the same SVG text layout without an HTML DOM.
+	return code.replaceAll(/<br\s*\/?>/gi, "\\n");
+}
+
 svgdom.config
 	.setFontDir(fileURLToPath(new URL("../../", import.meta.url)))
 	.setFontFamilyMappings({
@@ -42,6 +71,8 @@ svgdom.config
 		"Open Sans": "node_modules/svgdom/fonts/OpenSans-Regular.ttf",
 	})
 	.preloadFonts();
+
+installSvgTextUnitNormalization();
 
 class HeadlessStyleSheet {
 	cssRules = [];
@@ -140,7 +171,10 @@ function renderOptions(theme, seed, fontMode) {
 
 async function renderVariant(code, theme, seed, fontMode) {
 	mermaid.initialize(renderOptions(theme, seed, fontMode));
-	const { svg } = await mermaid.render(`${seed}-${theme}`, code);
+	const { svg } = await mermaid.render(
+		`${seed}-${theme}`,
+		normalizeLabelLineBreaks(code),
+	);
 	if (!svg?.startsWith("<svg")) {
 		throw new Error("Mermaid returned no SVG output");
 	}
