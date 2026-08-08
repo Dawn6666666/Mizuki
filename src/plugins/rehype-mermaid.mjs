@@ -141,7 +141,8 @@ function applyRenderedDiagram(node, code, seed, variants) {
 export function rehypeMermaid(options = {}) {
 	const render = options.renderer ?? renderMermaidVariants;
 	const errorMode = options.errorMode === "error" ? "error" : "warn";
-	const rendererVersion = options.rendererVersion ?? "official-node-v2";
+	const rendererVersion = options.rendererVersion ?? "official-node-v3-custom";
+	const fontMode = options.fontMode === "system" ? "system" : "custom";
 	const report = options.onDiagnostic ?? ((message) => console.warn(message));
 
 	return async (tree, file = {}) => {
@@ -161,7 +162,7 @@ export function rehypeMermaid(options = {}) {
 				);
 				const seed = diagramSeed(file.path, index, code, rendererVersion);
 				try {
-					const variants = await render(code, seed);
+					const variants = await render(code, seed, { fontMode });
 					applyRenderedDiagram(node, code, seed, variants);
 				} catch (error) {
 					const message = `[rehype-mermaid] ${file.path || "content"} diagram ${index + 1}: ${error instanceof Error ? error.message : String(error)}`;

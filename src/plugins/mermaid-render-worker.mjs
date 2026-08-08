@@ -1,11 +1,16 @@
+import { fileURLToPath } from "node:url";
 import { parentPort } from "node:worker_threads";
 
 import * as svgdom from "svgdom";
 
+const CUSTOM_FONT_FAMILY = "ZenMaruGothic-Medium, sans-serif";
+const CUSTOM_OUTPUT_FONT_FAMILY =
+	"var(--font-body, sans-serif), var(--font-cjk, sans-serif), sans-serif";
+const SYSTEM_FONT_FAMILY = "sans-serif";
+
 const LIGHT_THEME = {
 	theme: "default",
 	themeVariables: {
-		fontFamily: "inherit",
 		fontSize: "16px",
 		primaryColor: "#f8fafc",
 		primaryTextColor: "#0f172a",
@@ -19,7 +24,6 @@ const LIGHT_THEME = {
 const DARK_THEME = {
 	theme: "dark",
 	themeVariables: {
-		fontFamily: "inherit",
 		fontSize: "16px",
 		primaryColor: "#1e293b",
 		primaryTextColor: "#f8fafc",
@@ -29,6 +33,15 @@ const DARK_THEME = {
 		tertiaryColor: "#475569",
 	},
 };
+
+svgdom.config
+	.setFontDir(fileURLToPath(new URL("../../", import.meta.url)))
+	.setFontFamilyMappings({
+		"ZenMaruGothic-Medium": "src/assets/fonts/ZenMaruGothic-Medium.ttf",
+		"sans-serif": "node_modules/svgdom/fonts/OpenSans-Regular.ttf",
+		"Open Sans": "node_modules/svgdom/fonts/OpenSans-Regular.ttf",
+	})
+	.preloadFonts();
 
 class HeadlessStyleSheet {
 	cssRules = [];
@@ -103,8 +116,10 @@ function installHeadlessDom() {
 installHeadlessDom();
 const mermaid = (await import("mermaid")).default;
 
-function renderOptions(theme, seed) {
+function renderOptions(theme, seed, fontMode) {
 	const palette = theme === "dark" ? DARK_THEME : LIGHT_THEME;
+	const fontFamily =
+		fontMode === "system" ? SYSTEM_FONT_FAMILY : CUSTOM_FONT_FAMILY;
 	return {
 		startOnLoad: false,
 		// svgdom deliberately implements geometry instead of a full browser DOM.
@@ -116,21 +131,30 @@ function renderOptions(theme, seed) {
 		flowchart: { htmlLabels: false },
 		gantt: { useWidth: 1200 },
 		...palette,
+		themeVariables: {
+			...palette.themeVariables,
+			fontFamily,
+		},
 	};
 }
 
-async function renderVariant(code, theme, seed) {
-	mermaid.initialize(renderOptions(theme, seed));
+async function renderVariant(code, theme, seed, fontMode) {
+	mermaid.initialize(renderOptions(theme, seed, fontMode));
 	const { svg } = await mermaid.render(`${seed}-${theme}`, code);
 	if (!svg?.startsWith("<svg")) {
 		throw new Error("Mermaid returned no SVG output");
 	}
-	return svg;
+	return fontMode === "system"
+		? svg
+		: svg.replaceAll(
+				/ZenMaruGothic-Medium,\s*sans-serif/g,
+				CUSTOM_OUTPUT_FONT_FAMILY,
+			);
 }
 
-async function renderVariants(code, seed) {
-	const light = await renderVariant(code, "light", seed);
-	const dark = await renderVariant(code, "dark", seed);
+async function renderVariants(code, seed, fontMode) {
+	const light = await renderVariant(code, "light", seed, fontMode);
+	const dark = await renderVariant(code, "dark", seed, fontMode);
 	return { light, dark };
 }
 
@@ -146,7 +170,11 @@ let renderQueue = Promise.resolve();
 parentPort?.on("message", (message) => {
 	renderQueue = renderQueue
 		.then(async () => {
-			const variants = await renderVariants(message.code, message.seed);
+			const variants = await renderVariants(
+				message.code,
+				message.seed,
+				message.fontMode,
+			);
 			parentPort?.postMessage({ id: message.id, variants });
 		})
 		.catch((error) => {

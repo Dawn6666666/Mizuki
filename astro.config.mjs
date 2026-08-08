@@ -255,7 +255,8 @@ export default defineConfig({
 					{
 						...markdownConfig.mermaid,
 						// Bump when static SVG output changes so Astro drops stale content.
-						rendererVersion: "official-node-v2",
+						rendererVersion: `official-node-v3-${customFontsEnabled ? "custom" : "system"}`,
+						fontMode: customFontsEnabled ? "custom" : "system",
 					},
 				],
 				rehypePlantuml,

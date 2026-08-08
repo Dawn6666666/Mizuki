@@ -51,23 +51,24 @@ function createRenderWorker() {
 	return worker;
 }
 
-function renderInWorker(code, seed) {
+function renderInWorker(code, seed, fontMode) {
 	if (!activeWorker) activeWorker = createRenderWorker();
 	const worker = activeWorker;
 	const id = ++nextRequestId;
 	return new Promise((resolve, reject) => {
 		pendingRenders.set(id, { resolve, reject });
 		worker.ref();
-		worker.postMessage({ id, code, seed });
+		worker.postMessage({ id, code, seed, fontMode });
 	});
 }
 
-export async function renderMermaidVariants(code, seed) {
+export async function renderMermaidVariants(code, seed, options = {}) {
+	const fontMode = options.fontMode === "system" ? "system" : "custom";
 	const cacheKey = createHash("sha256")
-		.update(`${seed}\0${code}`)
+		.update(`${seed}\0${fontMode}\0${code}`)
 		.digest("hex");
 	if (!renderCache.has(cacheKey)) {
-		renderCache.set(cacheKey, renderInWorker(code, seed));
+		renderCache.set(cacheKey, renderInWorker(code, seed, fontMode));
 	}
 	return renderCache.get(cacheKey);
 }

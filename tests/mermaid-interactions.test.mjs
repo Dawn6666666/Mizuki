@@ -158,7 +158,10 @@ describe("Mermaid interaction regressions", () => {
 	it("has no Playwright, Puppeteer, or browser executable dependency", () => {
 		assert.match(packageSource, /"mermaid": "11\.16\.1"/);
 		assert.match(packageSource, /"svgdom": "0\.1\.28"/);
-		assert.match(astroConfigSource, /rendererVersion: "official-node-v2"/);
+		assert.match(
+			astroConfigSource,
+			/rendererVersion: `official-node-v3-\$\{customFontsEnabled/,
+		);
 		assert.doesNotMatch(
 			packageSource,
 			/"(?:beautiful-mermaid|playwright|playwright-core|puppeteer|mermaid-isomorphic)"/,
@@ -184,11 +187,51 @@ describe("Mermaid interaction regressions", () => {
 		assert.match(light, /class="cluster-label\s*"/);
 		assert.match(light, /fill:#ECECFF;stroke:#9370DB/i);
 		assert.match(dark, /fill:#1f2020;stroke:#ccc/i);
+		assert.match(
+			light,
+			/font-family:var\(--font-body, sans-serif\), var\(--font-cjk, sans-serif\), sans-serif/,
+		);
+		assert.doesNotMatch(light, /font-family:inherit/);
 		const [, width, height] = light.match(
 			/viewBox="[^ ]+ [^ ]+ ([\d.]+) ([\d.]+)"/,
 		);
 		assert.ok(Number(width) > 500, "official Dagre layout should stay wide");
 		assert.ok(Number(height) > 500, "subgraph should retain its full height");
+	});
+
+	it("keeps class relation labels aligned with the measured font", async () => {
+		const diagram = `classDiagram
+			class User {
+				+String username
+				+login()
+			}
+			class Article {
+				+String title
+				+publish()
+			}
+			User "1" -- "*" Article : writes`;
+		const { light } = await renderMermaidVariants(
+			diagram,
+			"official-class-font",
+			{ fontMode: "custom" },
+		);
+		assert.match(
+			light,
+			/class="edgeLabel" transform="translate\([\d.]+, [\d.]+\)"/,
+		);
+		assert.match(
+			light,
+			/<rect class="background"[^>]+x="-[\d.]+"[^>]+width="[\d.]+"/,
+		);
+		assert.doesNotMatch(light, /ZenMaruGothic-Medium|font-family:inherit/);
+
+		const system = await renderMermaidVariants(
+			"classDiagram\n  User -- Article",
+			"official-class-system-font",
+			{ fontMode: "system" },
+		);
+		assert.match(system.light, /font-family:sans-serif/);
+		assert.doesNotMatch(system.light, /var\(--font-body/);
 	});
 
 	it("keeps invalid Mermaid source as a readable build diagnostic", async () => {
